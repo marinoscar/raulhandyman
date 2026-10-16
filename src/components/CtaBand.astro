@@ -1,0 +1,26 @@
+---
+import { business } from '../data/site';
+interface Props { heading?: string; text?: string; }
+const {
+  heading = 'Call or text Raul today.',
+  text = 'Tell him what needs fixing and where you are. Sending a photo by text gets you an answer fastest.',
+} = Astro.props;
+---
+<section class="cta band on-navy" aria-labelledby="cta-heading">
+  <div class="wrap">
+    <span class="eyebrow">Get it fixed</span>
+    <h2 id="cta-heading">{heading}</h2>
+    <p>{text}</p>
+    <div class="cta-row">
+      <a class="btn btn-gold" href={`tel:${business.phoneE164}`}>Call {business.phoneDisplay}</a>
+      <a class="btn btn-ghost" href={`sms:${business.phoneE164}`}>Send a text</a>
+    </div>
+  </div>
+</section>
+
+<style>
+  .cta { background: var(--navy-2); color: var(--on-navy); }
+  .wrap { padding-block: 72px; display: grid; gap: 20px; justify-items: start; }
+  h2 { font-size: clamp(2rem, 5vw, 3rem); }
+  p { color: var(--on-navy-muted); max-width: 36em; }
+</style>

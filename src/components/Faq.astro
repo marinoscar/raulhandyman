@@ -1,0 +1,22 @@
+---
+interface Props { items: { q: string; a: string }[]; openFirst?: boolean; }
+const { items, openFirst = true } = Astro.props;
+---
+<div class="faq">
+  {items.map((f, i) => (
+    <details open={openFirst && i === 0}>
+      <summary>{f.q}</summary>
+      <p>{f.a}</p>
+    </details>
+  ))}
+</div>
+
+<style>
+  .faq { display: grid; gap: 10px; max-width: 760px; }
+  details { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 0 20px; }
+  summary { cursor: pointer; padding: 18px 0; font-weight: 700; list-style: none; display: flex; justify-content: space-between; gap: 16px; }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: '+'; color: var(--gold-text); font-size: 1.4rem; line-height: 1; }
+  details[open] summary::after { content: '–'; }
+  p { padding-bottom: 18px; color: var(--muted); }
+</style>

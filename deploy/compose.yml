@@ -1,0 +1,36 @@
+# =============================================================================
+# Raul Handyman — Production Docker Compose
+# =============================================================================
+# Location on VPS: /opt/infra/apps/raulhandyman/compose.yml
+# Source of truth: repo/deploy/compose.yml (install.sh and deploy.sh copy it here)
+# Public URL:      https://raulhandyman.net (via proxy-nginx)
+# =============================================================================
+
+services:
+  web:
+    container_name: raulhandyman-web
+    image: raulhandyman-web:latest
+    build:
+      context: ./repo
+      dockerfile: Dockerfile
+      target: production
+    ports:
+      - "127.0.0.1:8330:80"
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx
+      - /var/run
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+          cpus: '0.5'
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

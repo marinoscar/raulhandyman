@@ -1,0 +1,41 @@
+---
+import Logo from './Logo.astro';
+import { business, services, towns } from '../data/site';
+const year = new Date().getFullYear();
+---
+<footer class="site-footer band on-navy">
+  <div class="wrap grid">
+    <div class="col">
+      <a class="brand" href="/"><Logo /><b>{business.name}</b></a>
+      <p>{business.tagline}<br />{business.yearsExperience} years experience · Insured</p>
+      <p class="nap">
+        <a href={`tel:${business.phoneE164}`}>{business.phoneDisplay}</a><br />
+        {business.baseCity}, {business.regionName}
+        {business.email && <><br /><a href={`mailto:${business.email}`}>{business.email}</a></>}
+      </p>
+    </div>
+    <nav class="col" aria-label="Services">
+      <h2>Services</h2>
+      <ul>{services.map((s) => <li><a href={`/${s.slug}/`}>{s.name}</a></li>)}</ul>
+    </nav>
+    <div class="col">
+      <h2>Service area</h2>
+      <p>{towns.map((t) => t.name).join(' · ')}</p>
+    </div>
+  </div>
+  <div class="wrap legal">© {year} {business.name}. All rights reserved.</div>
+</footer>
+
+<style>
+  .site-footer { background: var(--navy); color: var(--on-navy-muted); font-size: .92rem; }
+  .grid { display: grid; gap: 32px; padding-block: 48px 32px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+  .col { display: grid; gap: 12px; align-content: start; min-width: 0; }
+  .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--on-navy); }
+  .brand b { font-family: var(--f-display); font-size: 1.25rem; }
+  h2 { font-family: var(--f-body); font-size: .78rem; letter-spacing: .14em; text-transform: uppercase; color: var(--gold-bright); }
+  ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  a { text-decoration: none; }
+  a:hover { color: var(--on-navy); text-decoration: underline; }
+  .nap a { color: var(--on-navy); font-weight: 700; }
+  .legal { border-top: 1px solid rgba(255, 255, 255, .1); padding-block: 18px; font-size: .82rem; }
+</style>

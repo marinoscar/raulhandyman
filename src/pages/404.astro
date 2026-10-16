@@ -1,0 +1,23 @@
+---
+import Base from '../layouts/Base.astro';
+import ServiceGrid from '../components/ServiceGrid.astro';
+import { business } from '../data/site';
+---
+
+<Base title={`Page not found | ${business.name}`} description="This page doesn't exist." noindex>
+  <section class="block band">
+    <div class="wrap">
+      <div class="head">
+        <span class="eyebrow">404</span>
+        <h1>This page doesn't exist.</h1>
+        <p>It may have moved. Pick a service below, go to the <a href="/">home page</a>, or call {business.phoneDisplay}.</p>
+      </div>
+      <ServiceGrid />
+    </div>
+  </section>
+</Base>
+
+<style>
+  h1 { font-size: clamp(2rem, 5vw, 3rem); }
+  .head a { color: var(--gold-text); font-weight: 700; }
+</style>

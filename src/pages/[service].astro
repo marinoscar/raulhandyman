@@ -1,0 +1,97 @@
+---
+import Base from '../layouts/Base.astro';
+import ServiceGrid from '../components/ServiceGrid.astro';
+import Faq from '../components/Faq.astro';
+import CtaBand from '../components/CtaBand.astro';
+import { business, services, towns, type Service } from '../data/site';
+import { serviceSchema, breadcrumbSchema } from '../data/schema';
+
+export function getStaticPaths() {
+  return services.map((s) => ({ params: { service: s.slug }, props: { s } }));
+}
+
+const { s } = Astro.props as { s: Service };
+const title = `${s.seoName} in Conroe, TX | ${business.name}`;
+const description = `${s.summary} Serving Conroe & The Woodlands. Call or text ${business.phoneDisplay}.`;
+const schema = [serviceSchema(s), breadcrumbSchema(s)];
+const townList = towns.map((t) => t.name);
+---
+
+<Base title={title} description={description} schema={schema}>
+  <section class="svc-hero band on-navy">
+    <div class="wrap">
+      <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> <span aria-hidden="true">/</span> <span aria-current="page">{s.name}</span></nav>
+      <span class="eyebrow">{s.tag} · Conroe &amp; The Woodlands, TX</span>
+      <h1>{s.seoName} in Conroe &amp; The Woodlands</h1>
+      <p class="lede">{s.intro}</p>
+      <div class="cta-row">
+        <a class="btn btn-gold" href={`tel:${business.phoneE164}`}>Call {business.phoneDisplay}</a>
+        <a class="btn btn-ghost" href={`sms:${business.phoneE164}`}>Text a photo of the job</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="block band">
+    <div class="wrap body-grid">
+      <div class="prose">
+        {s.details.map((d) => (
+          <div class="detail">
+            <h2>{d.heading}</h2>
+            <p>{d.body}</p>
+          </div>
+        ))}
+        <div class="detail">
+          <h2>Where Raul works</h2>
+          <p>
+            {business.name} is based in {business.baseCity} and takes {s.name.toLowerCase()} jobs across {townList.slice(0, -1).join(', ')} and {townList[townList.length - 1]}.
+            {business.yearsExperience} years of experience, insured, and the owner does the work himself.
+          </p>
+        </div>
+      </div>
+      <aside class="jobs" aria-labelledby="jobs-h">
+        <h2 id="jobs-h">Common jobs</h2>
+        <ul>{s.jobs.map((j) => <li>{j}</li>)}</ul>
+        <a class="btn btn-navy" href={`sms:${business.phoneE164}`}>Text a photo for a price</a>
+      </aside>
+    </div>
+  </section>
+
+  {s.faq.length > 0 && (
+    <section class="block band faq-band" aria-labelledby="svc-faq-h">
+      <div class="wrap">
+        <div class="head"><span class="eyebrow">Questions</span><h2 id="svc-faq-h">{s.name}: common questions</h2></div>
+        <Faq items={s.faq} />
+      </div>
+    </section>
+  )}
+
+  <section class="block band more" aria-labelledby="more-h">
+    <div class="wrap">
+      <div class="head"><span class="eyebrow">Also available</span><h2 id="more-h">Other handyman services</h2></div>
+      <ServiceGrid exclude={s.slug} />
+    </div>
+  </section>
+
+  <CtaBand heading={`Need ${s.name.toLowerCase()}? Call or text Raul.`} />
+</Base>
+
+<style>
+  .svc-hero { background: var(--navy); color: var(--on-navy); }
+  .svc-hero .wrap { display: grid; gap: 18px; padding-block: 40px 56px; }
+  .crumbs { font-size: .88rem; color: var(--on-navy-muted); display: flex; gap: 8px; flex-wrap: wrap; }
+  .crumbs a { text-decoration: none; }
+  .crumbs a:hover { color: var(--on-navy); text-decoration: underline; }
+  h1 { font-size: clamp(2.1rem, 5.5vw, 3.4rem); font-weight: 800; letter-spacing: -.02em; max-width: 18em; }
+  .lede { font-size: 1.15rem; color: var(--on-navy-muted); max-width: 40em; }
+
+  .body-grid { display: grid; gap: 40px; align-items: start; }
+  @media (min-width: 860px) { .body-grid { grid-template-columns: 1.5fr 1fr; } }
+  .detail { display: grid; gap: 10px; }
+  .detail h2 { font-size: 1.5rem; font-weight: 700; }
+  .jobs { background: var(--surface); border: 1px solid var(--line); border-top: 3px solid var(--gold); border-radius: 8px; padding: 24px; display: grid; gap: 14px; min-width: 0; }
+  .jobs h2 { font-size: 1.3rem; }
+  .jobs ul { margin: 0; padding-left: 1.1em; display: grid; gap: 6px; }
+  .jobs li::marker { color: var(--gold); }
+  .jobs .btn { justify-self: start; }
+  .faq-band, .more { padding-top: 0; }
+</style>

@@ -1,0 +1,27 @@
+---
+import { services } from '../data/site';
+interface Props { exclude?: string; }
+const { exclude } = Astro.props;
+const list = services.filter((s) => s.slug !== exclude);
+---
+<ul class="services">
+  {list.map((s) => (
+    <li class="svc">
+      <span class="code">{s.tag}</span>
+      <h3><a href={`/${s.slug}/`}>{s.name}</a></h3>
+      <p>{s.summary}</p>
+    </li>
+  ))}
+</ul>
+
+<style>
+  .services { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; list-style: none; margin: 0; padding: 0; }
+  .svc { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 22px 20px 20px; display: grid; gap: 8px; align-content: start; position: relative; min-width: 0; transition: border-color .15s; }
+  .svc:hover, .svc:focus-within { border-color: var(--gold); }
+  .svc::before { content: ''; position: absolute; top: 16px; right: 16px; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--line); background: var(--bg); }
+  .code { font-size: .72rem; letter-spacing: .14em; text-transform: uppercase; color: var(--gold-text); font-weight: 700; }
+  h3 a { text-decoration: none; }
+  h3 a::after { content: ''; position: absolute; inset: 0; border-radius: 8px; }
+  h3 a:hover { text-decoration: underline; text-decoration-color: var(--gold); text-underline-offset: 4px; }
+  p { color: var(--muted); font-size: .95rem; }
+</style>
