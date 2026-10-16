@@ -60,7 +60,7 @@ Prerequisite: DNS in GoDaddy points to the VPS — `A @ → <VPS IP>` and `CNAME
 ```bash
 mkdir -p /opt/infra/apps/raulhandyman
 cd /opt/infra/apps/raulhandyman
-git clone git@github.com:marinoscar/raulhandyman.git repo
+git clone https://github.com/marinoscar/raulhandyman.git repo
 bash repo/deploy/install.sh
 ```
 
