@@ -5,6 +5,7 @@ import { PROJECT_MEDIA_KEY_PREFIX, APP_STORAGE_KEY_PREFIXES } from '../../../src
 import { PROJECTS_SYSTEM_SETTINGS } from '../../../src/projects/projects.settings';
 import { PROJECTS_SETTINGS_DEFAULTS, projectsSettingsPatchSchema, projectsSettingsSchema } from '../../../src/projects/projects.settings.schemas';
 import { PHOTO_PROCESS_JOB } from '../../../src/projects/media/photo-process.job';
+import { AI_SUGGEST_JOB, PHOTO_RETOUCH_JOB } from '../../../src/projects/ai/projects-ai.constants';
 import { STORAGE_KEY_PREFIX_PATTERN } from '@marinoscar/platform-api/storage';
 
 describe('projects settings namespace', () => {
@@ -49,5 +50,7 @@ describe('project media wiring pins', () => {
 
   it('the job type string is permanent', () => {
     expect(PHOTO_PROCESS_JOB).toBe('projects.photo.process');
+    expect(AI_SUGGEST_JOB).toBe('projects.ai.suggest');
+    expect(PHOTO_RETOUCH_JOB).toBe('projects.photo.retouch');
   });
 });

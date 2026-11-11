@@ -20,6 +20,8 @@ import type {
 
 /** The `If-Match` value for a project version (the API accepts the bare number). */
 const ifMatch = (version: number): { ifMatch: string } => ({ ifMatch: String(version) });
+/** The same header for a POST (the platform test host records `ifMatch` only for PUT, PATCH and DELETE; the real transport sends both alike). */
+const ifMatchHeader = (version: number): { headers: Record<string, string> } => ({ headers: { 'If-Match': String(version) } });
 
 /** `GET /projects?...` with only the filters that are set. */
 export function projectsQuery(filters: ProjectFilters): string {
@@ -42,8 +44,8 @@ export function createProjectsClient(api: PlatformApiClient) {
     create: (input: CreateProjectInput) => api.post<ProjectSummary>('/projects', input),
     update: (id: string, patch: UpdateProjectPatch, version: number) => api.patch<ProjectSummary>(base(id), patch, ifMatch(version)),
     remove: (id: string) => api.delete<void>(base(id)),
-    publish: (id: string, version: number) => api.post<PublishResult>(`${base(id)}/publish`, undefined, ifMatch(version)),
-    unpublish: (id: string, version: number) => api.post<PublishResult>(`${base(id)}/unpublish`, undefined, ifMatch(version)),
+    publish: (id: string, version: number) => api.post<PublishResult>(`${base(id)}/publish`, undefined, ifMatchHeader(version)),
+    unpublish: (id: string, version: number) => api.post<PublishResult>(`${base(id)}/unpublish`, undefined, ifMatchHeader(version)),
 
     addPhoto: (id: string, storageObjectId: string, role?: PhotoRole) =>
       api.post<Photo>(`${base(id)}/photos`, role ? { storageObjectId, role } : { storageObjectId }),
@@ -57,7 +59,7 @@ export function createProjectsClient(api: PlatformApiClient) {
       api.post<{ jobId: string }>(`${base(id)}/photos/${encodeURIComponent(photoId)}/retouch`, { options }),
 
     suggest: (id: string, body: { fields?: Array<'project' | 'photos'>; photoIds?: string[] } = {}) => api.post<{ jobId: string }>(`${base(id)}/ai/suggest`, body),
-    apply: (id: string, body: ApplyBody, version: number) => api.post<ProjectSummary>(`${base(id)}/ai/apply`, body, ifMatch(version)),
+    apply: (id: string, body: ApplyBody, version: number) => api.post<ProjectSummary>(`${base(id)}/ai/apply`, body, ifMatchHeader(version)),
     regenerate: (id: string, body: RegenerateBody) => api.post<{ jobId: string }>(`${base(id)}/ai/regenerate`, body),
 
     siteStatus: () => api.get<SiteStatus>('/site/status'),

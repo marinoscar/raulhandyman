@@ -2,7 +2,7 @@ import type { ReactElement } from 'react';
 import { render } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { PlatformHostProvider } from '@marinoscar/platform-web/core';
-import { createTestPlatformHost, type TestPlatformHostOptions } from '@marinoscar/platform-web/testing';
+import { createTestPlatformHost, type TestApiRequest, type TestPlatformHostOptions } from '@marinoscar/platform-web/testing';
 
 import type { Catalog, Photo, Project, ProjectSummary } from '../../projects/types';
 
@@ -104,7 +104,7 @@ export function renderWithHost(ui: ReactElement, options: TestPlatformHostOption
   return { host, ...view };
 }
 
-export const calls = (host: { requests: Array<{ method: string; path: string }> }, prefix: string) =>
+export const calls = (host: { requests: TestApiRequest[] }, prefix: string): TestApiRequest[] =>
   host.requests.filter((request) => `${request.method} ${request.path}`.startsWith(prefix));
 
 export type { Responses };

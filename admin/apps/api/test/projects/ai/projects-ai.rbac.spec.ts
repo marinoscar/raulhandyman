@@ -52,8 +52,8 @@ const ROUTES: Route[] = [
   { name: 'remove retouch', method: 'DELETE', url: `/projects/${ID}/photos/${PHOTO}/retouch`, permissions: ['projects:write'], aiGuarded: false },
 ];
 
-/** Admin, the content editor, the roles without project access, the build user and a content editor that lost `ai:use`. */
-const CALLERS: Array<{ label: string; roles: string; drop?: string }> = [
+/** The administrator, the content editor, the roles without project access and the build user. */
+const CALLERS: Array<{ label: string; roles: string }> = [
   { label: 'admin', roles: 'admin,org_admin' },
   { label: 'content_editor', roles: 'content_editor' },
   { label: 'viewer', roles: 'viewer' },
@@ -112,13 +112,8 @@ function call(route: Route, roles?: string) {
 }
 
 describe('the seeded grants these routes rely on', () => {
-  it('give the content editor and the administrator projects:write and ai:use', () => {
-    for (const role of ['content_editor', 'admin', 'org_admin']) {
-      const held = grants[role] ?? [];
-      // The administrator holds the org permissions through org_admin.
-      if (role === 'admin') continue;
-      expect(held).toEqual(expect.arrayContaining(['projects:write', 'ai:use']));
-    }
+  it('give the content editor and the org administrator projects:write and ai:use', () => {
+    for (const role of ['content_editor', 'org_admin']) expect(grants[role]).toEqual(expect.arrayContaining(['projects:write', 'ai:use']));
   });
   it('keep ai:use and projects:write away from the other roles', () => {
     for (const role of ['viewer', 'contributor', 'site_reader']) expect((grants[role] ?? []).filter((id) => id === 'projects:write')).toEqual([]);

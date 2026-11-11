@@ -15,7 +15,8 @@ beforeAll(() => Logger.overrideLogger(false));
 
 function build() {
   const db = new FakeOrgDb();
-  const jobs = { enqueue: jest.fn(async (input: any) => ({ id: `job-${jobs.enqueue.mock.calls.length}`, ...input })) };
+  let count = 0;
+  const jobs = { enqueue: jest.fn(async (input: any) => ({ id: `job-${++count}`, ...input })) };
   const prisma = Object.assign(db.prisma, { job: { findFirst: jest.fn().mockResolvedValue(null) } });
   const storage = { deleteAll: jest.fn().mockResolvedValue(undefined) };
   const site = new SitePublishService(db.prisma as never, { publishPublished: jest.fn(), publishUnpublished: jest.fn() } as never);

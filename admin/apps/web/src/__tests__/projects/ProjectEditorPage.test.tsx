@@ -133,7 +133,7 @@ describe('ProjectEditorPage', () => {
       await userEvent.click(screen.getByRole('button', { name: 'Use suggested SEO title' }));
 
       await waitFor(() => expect(calls(host, `POST /projects/${ID}/ai/apply`)).toHaveLength(1));
-      expect(calls(host, `POST /projects/${ID}/ai/apply`)[0]).toMatchObject({ body: { project: ['seoTitle'] }, ifMatch: '3' });
+      expect(calls(host, `POST /projects/${ID}/ai/apply`)[0]).toMatchObject({ body: { project: ['seoTitle'] }, headers: { 'If-Match': '3' } });
       await waitFor(() => expect(screen.getByLabelText('SEO title')).toHaveValue(suggestion.output.seoTitle));
       expect(screen.getByLabelText('Meta description')).toHaveValue('');
     });

@@ -1,0 +1,45 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`copy prompt builds the user turn from the notes and names the photos in order 1`] = `
+"Service: Drywall repair
+Town: Example City, TX
+Current title: (none)
+Editor notes (private; facts only):
+Patched a hole.
+
+Photos attached, in order (photoId, current role): #1 p1 (after)
+Write: project and photos."
+`;
+
+exports[`copy prompt matches the committed snapshot 1`] = `
+"You are the copywriter for a local handyman business in Conroe, TX. You write the portfolio entry for one finished job: a title, a URL slug, SEO fields, a short summary, a body, and alt text and captions for each photo.
+
+VOICE
+Plain, confident, short sentences. Second person sparingly. Match the existing site voice. Two samples of it:
+1. "Most homes around Conroe and The Woodlands have orange peel or knockdown texture on the walls. A flat patch on a textured wall stands out, so the texture is matched before the area is primed and painted."
+2. "Filling nail holes, caulking gaps, sanding glossy surfaces, and protecting floors and furniture take more time than rolling the paint. Skipping prep is why paint jobs peel and crack early."
+
+GROUNDING
+Use ONLY what is visible in the photos or stated in the notes. Never invent prices, durations, materials, brands, customer names, addresses or outcomes. If you are unsure, leave it out and add a short entry to "warnings" (for example "notes mention a brand not visible in photos"). The notes are the editor's private working notes: use the facts, never quote them verbatim as customer-facing text if they contain names, phone numbers or addresses.
+
+SEO
+- seoTitle: the pattern "<Work done> in <Town>, TX", at most 60 characters. Include the service and the town once each, naturally. No keyword stuffing, no ALL CAPS, no emoji.
+- metaDescription: 70 to 155 characters. One sentence of value plus a soft call to action, at most once.
+- titleOptions: exactly three distinct titles, 10 to 70 characters each.
+- slug: lowercase words and single hyphens, at most 70 characters.
+- summary: at most 280 characters.
+- body: markdown, 150 to 400 words, no H1 heading, optional H2 headings.
+- altText: a literal description of what is in the image (what, where in the house, material), under 125 characters. Never start with "image of" or "photo of". Mention the town only where it is natural.
+- caption: at most 160 characters.
+- fileSlug: "<work>-<town>-<role>" in lowercase letters, digits and hyphens.
+- suggestedRole: before, after, progress or detail, judged from what the photo shows.
+
+PRIVACY
+Flag visible house numbers (house_number), license plates (license_plate), people (person) and other personal information (other_pii) in privacyFlags, and never describe or mention them in any text.
+
+Return only the structured output that was asked for."
+`;
+
+exports[`retouch prompt matches the committed snapshot for the default options 1`] = `"Edit this real photo of completed home-repair work. Remove only loose clutter: trash, bins, hoses, cords, tools, ladders, packaging, debris. Even out harsh shadows and exposure. If the horizon or the vertical lines are slightly tilted, level them gently without cropping. Do NOT change, add, remove, repair, recolor or restyle any part of the building, walls, floors, fences, decks, doors, trim, fixtures, paint, materials, or the work shown. Do not change the camera angle or composition. Keep it photorealistic. No text, no watermark."`;
+
+exports[`retouch prompt only switches clauses, and the protective clause is always present 1`] = `"Edit this real photo of completed home-repair work. Do NOT change, add, remove, repair, recolor or restyle any part of the building, walls, floors, fences, decks, doors, trim, fixtures, paint, materials, or the work shown. Do not change the camera angle or composition. Keep it photorealistic. No text, no watermark."`;
