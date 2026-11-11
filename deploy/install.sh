@@ -97,6 +97,11 @@ main() {
   log "[3/${TOTAL_STEPS}] Installing compose.yml..."
   cp "${REPO_DIR}/deploy/compose.yml" "${APP_DIR}/compose.yml"
   log "  Copied to ${APP_DIR}/compose.yml"
+  # Read-only content token for the admin app (empty until the admin is deployed).
+  if [ ! -e "${APP_DIR}/.content-token" ]; then
+    install -m 600 /dev/null "${APP_DIR}/.content-token"
+    log "  Created empty ${APP_DIR}/.content-token (see docs/runbook-admin.md)"
+  fi
 
   # -------------------------------------------------------------------------
   # Step 4: Build and start
@@ -104,6 +109,11 @@ main() {
   log ""
   log "[4/${TOTAL_STEPS}] Building image and starting container..."
   cd "${APP_DIR}"
+  # Re-running the installer on a site that already has published projects must not wipe them:
+  # when a content token exists, build with the admin API URL (same as deploy.sh).
+  if [ -s "${APP_DIR}/.content-token" ]; then
+    export CONTENT_API_URL="${ADMIN_API_URL:-http://127.0.0.1:8340}"
+  fi
   docker compose build web
   docker compose up -d web
 
@@ -204,6 +214,23 @@ TEMP_NGINX_EOF
   chmod +x "${REPO_DIR}/deploy/deploy.sh"
   ln -sfn "${REPO_DIR}/deploy/deploy.sh" "${APP_DIR}/deploy.sh"
   log "  ${APP_DIR}/deploy.sh -> ${REPO_DIR}/deploy/deploy.sh"
+
+  # Content rebuilds: every 2 minutes, rebuild only if the admin published something new.
+  cat > /etc/cron.d/raulhandyman-content <<CRON
+# Managed by raulhandyman/deploy/install.sh
+*/2 * * * * root ${APP_DIR}/deploy.sh --content >> /var/log/raulhandyman-content.log 2>&1
+CRON
+  chmod 644 /etc/cron.d/raulhandyman-content
+  cat > /etc/logrotate.d/raulhandyman-content <<LOGROTATE
+/var/log/raulhandyman-content.log {
+  weekly
+  rotate 4
+  compress
+  missingok
+  notifempty
+}
+LOGROTATE
+  log "  Installed /etc/cron.d/raulhandyman-content (every 2 minutes) and logrotate"
 
   log ""
   log "============================================"

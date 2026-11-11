@@ -1,0 +1,95 @@
+{
+  "version": 1,
+  "services": [
+    {
+      "slug": "drywall-repair",
+      "name": "Drywall repair",
+      "seoName": "Drywall Repair",
+      "tag": "Walls"
+    },
+    {
+      "slug": "painting",
+      "name": "Interior & exterior painting",
+      "seoName": "Interior & Exterior Painting",
+      "tag": "Paint"
+    },
+    {
+      "slug": "doors-and-trim",
+      "name": "Doors, trim & baseboards",
+      "seoName": "Door, Trim & Baseboard Repair",
+      "tag": "Carpentry"
+    },
+    {
+      "slug": "fence-and-deck-repair",
+      "name": "Fence & deck repair",
+      "seoName": "Fence & Deck Repair",
+      "tag": "Outdoor"
+    },
+    {
+      "slug": "flooring-repair",
+      "name": "Flooring repairs",
+      "seoName": "Flooring Repair",
+      "tag": "Floors"
+    },
+    {
+      "slug": "tv-mounting-and-shelving",
+      "name": "TV mounting & shelving",
+      "seoName": "TV Mounting & Shelving",
+      "tag": "Installs"
+    },
+    {
+      "slug": "caulking-and-weatherproofing",
+      "name": "Caulking & weatherproofing",
+      "seoName": "Caulking & Weatherproofing",
+      "tag": "Weather"
+    },
+    {
+      "slug": "assembly-and-small-repairs",
+      "name": "Assembly & small repairs",
+      "seoName": "Furniture Assembly & Small Repairs",
+      "tag": "Odd jobs"
+    }
+  ],
+  "towns": [
+    {
+      "name": "Conroe",
+      "slug": "conroe",
+      "core": true
+    },
+    {
+      "name": "The Woodlands",
+      "slug": "the-woodlands",
+      "core": true
+    },
+    {
+      "name": "Montgomery",
+      "slug": "montgomery",
+      "core": false
+    },
+    {
+      "name": "Willis",
+      "slug": "willis",
+      "core": false
+    },
+    {
+      "name": "Spring",
+      "slug": "spring",
+      "core": false
+    },
+    {
+      "name": "Magnolia",
+      "slug": "magnolia",
+      "core": false
+    },
+    {
+      "name": "Shenandoah",
+      "slug": "shenandoah",
+      "core": false
+    },
+    {
+      "name": "Oak Ridge North",
+      "slug": "oak-ridge-north",
+      "core": false
+    }
+  ]
+}

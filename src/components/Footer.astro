@@ -1,6 +1,8 @@
 ---
 import Logo from './Logo.astro';
 import { business, services, towns } from '../data/site';
+import { getProjects } from '../data/projects';
+const hasProjects = (await getProjects()).length > 0;
 const year = new Date().getFullYear();
 ---
 <footer class="site-footer band on-navy">
@@ -16,7 +18,10 @@ const year = new Date().getFullYear();
     </div>
     <nav class="col" aria-label="Services">
       <h2>Services</h2>
-      <ul>{services.map((s) => <li><a href={`/${s.slug}/`}>{s.name}</a></li>)}</ul>
+      <ul>
+        {services.map((s) => <li><a href={`/${s.slug}/`}>{s.name}</a></li>)}
+        {hasProjects && <li><a href="/projects/">Recent projects</a></li>}
+      </ul>
     </nav>
     <div class="col">
       <h2>Service area</h2>

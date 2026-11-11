@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1.7
 # =============================================================================
 # Raul Handyman — production image
 # Stage 1 builds the static site with Astro. Stage 2 serves it with nginx.
@@ -11,7 +12,17 @@ COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
 
 COPY . .
-RUN npm run build
+
+# Published projects come from the admin app at build time (scripts/fetch-content.mjs).
+# CONTENT_MODE=production means: never use fixtures. With no CONTENT_API_URL the build has an
+# empty portfolio; with a URL but no token the build fails. The token is a BuildKit secret, so
+# it is never stored in an image layer.
+ARG CONTENT_API_URL=""
+ENV CONTENT_MODE=production
+# Build, then precompress (.gz/.br) and generate dist/_redirects.map
+RUN --mount=type=secret,id=content_token,required=false \
+    if [ -s /run/secrets/content_token ]; then export CONTENT_API_TOKEN_FILE=/run/secrets/content_token; fi; \
+    CONTENT_API_URL="$CONTENT_API_URL" npm run build && node scripts/compress.mjs
 
 # ---- Runtime stage ----------------------------------------------------------
 FROM nginx:1.27-alpine AS production

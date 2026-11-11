@@ -1,0 +1,25 @@
+---
+import ProjectCard from './ProjectCard.astro';
+import type { Project } from '../data/projects';
+interface Props { heading: string; projects: Project[]; moreHref?: string; id?: string; eyebrow?: string; }
+const { heading, projects, moreHref = '/projects/', id = 'projects-strip', eyebrow = 'Recent work' } = Astro.props;
+---
+{projects.length > 0 && (
+  <section class="block band strip" aria-labelledby={`${id}-h`}>
+    <div class="wrap">
+      <div class="head"><span class="eyebrow">{eyebrow}</span><h2 id={`${id}-h`}>{heading}</h2></div>
+      <ul class="grid">
+        {projects.map((p) => <li><ProjectCard project={p} /></li>)}
+      </ul>
+      <p class="more"><a href={moreHref}>See all projects →</a></p>
+    </div>
+  </section>
+)}
+
+<style>
+  .strip { padding-top: 0; }
+  .grid { list-style: none; margin: 0; padding: 0; display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+  .grid li { min-width: 0; display: grid; }
+  .more { margin-top: 22px; }
+  .more a { color: var(--gold-text); font-weight: 700; }
+</style>

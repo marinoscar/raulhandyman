@@ -1,0 +1,44 @@
+---
+// The one place photos become <picture>/<img>. Formats, widths, quality and priority are tuned in data/photo.ts.
+import { deliverPhoto } from '../data/photo';
+
+interface Props {
+  src: ImageMetadata;
+  alt: string;
+  /** Exact `sizes` for the slot; must match the CSS. */
+  sizes: string;
+  widths?: number[];
+  /** LCP image: eager, fetchpriority=high, sync decode. Everything else is lazy and async. */
+  priority?: boolean;
+  aspect?: '4/3' | '16/9' | 'auto';
+  /** Placeholder colour painted behind the image while it loads. */
+  bg?: string | null;
+  class?: string;
+}
+const { src, alt, sizes, widths, priority = false, aspect = 'auto', bg, class: cls } = Astro.props;
+const d = await deliverPhoto(src, widths);
+const style = [bg ? `--ph-bg:${bg}` : '', aspect !== 'auto' ? `aspect-ratio:${aspect.replace('/', ' / ')}` : ''].filter(Boolean).join(';');
+---
+<span class:list={['ph', cls]} style={style || undefined} data-aspect={aspect !== 'auto' ? aspect : undefined}>
+  <picture>
+    {d.sources.map((s) => <source type={s.type} srcset={s.srcset} sizes={sizes} />)}
+    <img
+      src={d.img.src}
+      srcset={d.img.srcset}
+      sizes={sizes}
+      width={d.img.width}
+      height={d.img.height}
+      alt={alt}
+      loading={priority ? 'eager' : 'lazy'}
+      decoding={priority ? 'sync' : 'async'}
+      fetchpriority={priority ? 'high' : undefined}
+    />
+  </picture>
+</span>
+
+<style>
+  .ph { display: block; background: var(--ph-bg, transparent); overflow: hidden; }
+  picture { display: contents; }
+  img { display: block; max-width: 100%; height: auto; }
+  .ph[data-aspect] img { width: 100%; height: 100%; object-fit: cover; }
+</style>

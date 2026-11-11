@@ -1,0 +1,21 @@
+// The sample domain model: a note a user writes and owns. It is registered in
+// the user-owned data registry (src/notes/notes.ownership.ts) with the same
+// purge policy as the `onDelete` below; the conformance suite checks that.
+model Note {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  title     String   @db.VarChar(200)
+  body      String   @default("")
+  archived  Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("notes")
+}
+
+extend model User {
+  notes Note[]
+}

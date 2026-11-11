@@ -4,6 +4,8 @@ import ServiceGrid from '../components/ServiceGrid.astro';
 import Faq from '../components/Faq.astro';
 import CtaBand from '../components/CtaBand.astro';
 import { business, services, towns, type Service } from '../data/site';
+import ProjectStrip from '../components/ProjectStrip.astro';
+import { getProjects } from '../data/projects';
 import { serviceSchema, breadcrumbSchema } from '../data/schema';
 
 export function getStaticPaths() {
@@ -14,6 +16,7 @@ const { s } = Astro.props as { s: Service };
 const title = `${s.seoName} in Conroe, TX | ${business.name}`;
 const description = `${s.summary} Serving Conroe & The Woodlands. Call or text ${business.phoneDisplay}.`;
 const schema = [serviceSchema(s), breadcrumbSchema(s)];
+const svcProjects = (await getProjects()).filter((p) => p.serviceSlug === s.slug).slice(0, 3);
 const townList = towns.map((t) => t.name);
 ---
 
@@ -64,6 +67,8 @@ const townList = towns.map((t) => t.name);
       </div>
     </section>
   )}
+
+  <ProjectStrip heading={`Recent ${s.name.toLowerCase()} projects`} projects={svcProjects} id="svc-projects" />
 
   <section class="block band more" aria-labelledby="more-h">
     <div class="wrap">

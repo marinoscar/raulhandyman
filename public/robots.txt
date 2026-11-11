@@ -2,3 +2,4 @@ User-agent: *
 Allow: /
 
 Sitemap: https://raulhandyman.net/sitemap-index.xml
+Sitemap: https://raulhandyman.net/image-sitemap.xml

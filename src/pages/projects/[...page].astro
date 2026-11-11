@@ -1,0 +1,102 @@
+---
+import Base from '../../layouts/Base.astro';
+import CtaBand from '../../components/CtaBand.astro';
+import ProjectCard from '../../components/ProjectCard.astro';
+import { business, services } from '../../data/site';
+import { getProjects, serviceOf, type Project } from '../../data/projects';
+import { projectListSchema, projectsBreadcrumbSchema } from '../../data/schema';
+
+const pagePath = (n: number) => (n === 1 ? '/projects/' : `/projects/page/${n}/`);
+
+// /projects/ is page 1 (param undefined); later pages are /projects/page/2/ and up. Never /projects/1/.
+export async function getStaticPaths() {
+  const PAGE_SIZE = 24;
+  const all = await getProjects();
+  const last = Math.max(1, Math.ceil(all.length / PAGE_SIZE));
+  return Array.from({ length: last }, (_, i) => {
+    const n = i + 1;
+    return {
+      params: { page: n === 1 ? undefined : `page/${n}` },
+      props: { data: all.slice(i * PAGE_SIZE, (i + 1) * PAGE_SIZE), n, last, total: all.length },
+    };
+  });
+}
+
+const { data, n, last, total } = Astro.props as { data: Project[]; n: number; last: number; total: number };
+const page = { data };
+const empty = total === 0;
+const suffix = n > 1 ? ` – Page ${n}` : '';
+const title = `Handyman Projects in Conroe & The Woodlands, TX${suffix} | ${business.name}`;
+const description = `Recent handyman and home repair projects by ${business.name} in Conroe, The Woodlands and nearby towns, with before and after photos.${suffix}`;
+const pageUrl = new URL(Astro.url.pathname, Astro.site).href;
+const prev = n > 1 ? pagePath(n - 1) : undefined;
+const next = n < last ? pagePath(n + 1) : undefined;
+const groups = services
+  .map((s) => ({ s, count: page.data.filter((p) => p.serviceSlug === s.slug).length }))
+  .filter((g) => g.count > 0);
+const schema = [...projectListSchema(page.data, pageUrl, title, description), projectsBreadcrumbSchema(n > 1 ? { name: `Page ${n}`, url: pageUrl } : undefined)];
+---
+
+<Base title={title} description={description} schema={schema} noindex={empty} prev={prev} next={next}>
+  <section class="list-hero band on-navy">
+    <div class="wrap">
+      <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> <span aria-hidden="true">/</span> <span aria-current="page">Projects</span></nav>
+      <span class="eyebrow">Recent work</span>
+      <h1>Recent handyman projects in Conroe &amp; The Woodlands</h1>
+      <p class="lede">Real jobs Raul has finished around Montgomery County, with the work shown before and after. Have something similar? Text a photo for a price.</p>
+    </div>
+  </section>
+
+  <section class="block band" aria-label="Projects">
+    <div class="wrap">
+      {empty ? (
+        <p class="none">Projects will appear here soon. In the meantime, <a href={`sms:${business.phoneE164}`}>text a photo of your job</a> to {business.phoneDisplay}.</p>
+      ) : (
+        <>
+          {groups.length > 1 && (
+            <nav class="jump" aria-label="Jump to a service">
+              <ul>
+                {groups.map((g) => <li><a href={`#svc-${g.s.slug}`}>{g.s.name} ({g.count})</a></li>)}
+              </ul>
+            </nav>
+          )}
+          <ul class="grid">
+            {page.data.map((p, i) => {
+              const firstOfService = page.data.findIndex((x) => x.serviceSlug === p.serviceSlug) === i;
+              return <li id={firstOfService && serviceOf(p) ? `svc-${p.serviceSlug}` : undefined}><ProjectCard project={p} /></li>;
+            })}
+          </ul>
+          {(prev || next) && (
+            <nav class="pager" aria-label="Pagination">
+              {prev ? <a href={prev}>← Newer projects</a> : <span />}
+              <span class="cur">Page {n} of {last}</span>
+              {next ? <a href={next}>Older projects →</a> : <span />}
+            </nav>
+          )}
+        </>
+      )}
+    </div>
+  </section>
+
+  <CtaBand heading="Have a repair like this? Call or text Raul." />
+</Base>
+
+<style>
+  .list-hero { background: var(--navy); color: var(--on-navy); }
+  .list-hero .wrap { display: grid; gap: 16px; padding-block: 40px 56px; }
+  .crumbs { font-size: .88rem; color: var(--on-navy-muted); display: flex; gap: 8px; flex-wrap: wrap; }
+  .crumbs a { text-decoration: none; }
+  .crumbs a:hover { color: var(--on-navy); text-decoration: underline; }
+  h1 { font-size: clamp(2.1rem, 5.5vw, 3.4rem); font-weight: 800; letter-spacing: -.02em; max-width: 18em; }
+  .lede { font-size: 1.15rem; color: var(--on-navy-muted); max-width: 40em; }
+  .none { color: var(--muted); }
+  .none a { color: var(--gold-text); font-weight: 700; }
+  .jump ul { list-style: none; margin: 0 0 24px; padding: 0; display: flex; flex-wrap: wrap; gap: 10px; }
+  .jump a { display: inline-block; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 6px 14px; font-weight: 600; font-size: .92rem; text-decoration: none; }
+  .jump a:hover { border-color: var(--gold); }
+  .grid { list-style: none; margin: 0; padding: 0; display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+  .grid li { min-width: 0; display: grid; scroll-margin-top: 16px; }
+  .pager { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 32px; flex-wrap: wrap; }
+  .pager a { color: var(--gold-text); font-weight: 700; }
+  .pager .cur { color: var(--muted); }
+</style>

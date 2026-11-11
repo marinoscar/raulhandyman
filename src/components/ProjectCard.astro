@@ -1,0 +1,28 @@
+---
+import Photo from './Photo.astro';
+import { coverOf, projectPath, serviceOf, type Project } from '../data/projects';
+interface Props { project: Project; }
+const { project: p } = Astro.props;
+const svc = serviceOf(p);
+const cover = coverOf(p);
+---
+<article class="pcard">
+  <div class="thumb"><Photo src={cover.renditions.card4x3} alt={cover.altText} bg={cover.dominantColor} aspect="4/3" widths={[480, 800]} sizes="(min-width: 1080px) 340px, (min-width: 700px) 45vw, 92vw" /></div>
+  <div class="txt">
+    <span class="eyebrow">{svc ? svc.tag : 'Project'} · {p.townName}</span>
+    <h3><a href={projectPath(p)}>{p.title}</a></h3>
+    <p>{p.summary}</p>
+  </div>
+</article>
+
+<style>
+  .pcard { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; position: relative; display: grid; align-content: start; min-width: 0; transition: border-color .15s; }
+  .pcard:hover, .pcard:focus-within { border-color: var(--gold); }
+  .thumb { aspect-ratio: 4 / 3; background: var(--line); }
+  .thumb :global(img) { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .txt { padding: 16px 18px 20px; display: grid; gap: 6px; }
+  h3 a { text-decoration: none; }
+  h3 a::after { content: ''; position: absolute; inset: 0; }
+  h3 a:hover { text-decoration: underline; text-decoration-color: var(--gold); text-underline-offset: 4px; }
+  p { color: var(--muted); font-size: .95rem; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+</style>

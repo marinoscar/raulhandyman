@@ -14,6 +14,13 @@ services:
       context: ./repo
       dockerfile: Dockerfile
       target: production
+      # Host network during the build only, so the build can reach the admin app on 127.0.0.1.
+      network: host
+      args:
+        # Set by deploy.sh when a content token exists; empty means an empty portfolio.
+        CONTENT_API_URL: ${CONTENT_API_URL:-}
+      secrets:
+        - content_token
     ports:
       - "127.0.0.1:8330:80"
     restart: unless-stopped
@@ -34,3 +41,9 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+# Read-only credential for the admin app's GET /api/site/* routes (permission site_content:read).
+# install.sh creates it empty (mode 600); the admin's Setup guide tells you how to fill it.
+secrets:
+  content_token:
+    file: ./.content-token

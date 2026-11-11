@@ -6,6 +6,8 @@
 #
 #   /opt/infra/apps/raulhandyman/deploy.sh           # deploy if main has new commits
 #   /opt/infra/apps/raulhandyman/deploy.sh --force   # rebuild even if nothing changed
+#   /opt/infra/apps/raulhandyman/deploy.sh --content # rebuild only if the admin published new
+#                                                    # content (run by cron every 2 minutes)
 #
 # This script:
 #   1. Fetches main and shows what changed
@@ -30,32 +32,121 @@ HOST_PORT="8330"
 CONTAINER="raulhandyman-web"
 IMAGE="raulhandyman-web"
 PROXY_CONF_SRC="${REPO_DIR}/deploy/raulhandyman.conf"
+# Content pipeline (projects published in the admin app). The token file holds a read-only
+# credential for GET /api/site/*; it is mounted into the image build as a BuildKit secret and
+# never lands in an image layer. An empty or missing file means "no admin yet": empty portfolio.
+TOKEN_FILE="${APP_DIR}/.content-token"
+VERSION_FILE="${APP_DIR}/.content-version"
+FAILED_FILE="${APP_DIR}/.content-failed"   # "<version> <epoch>" of the last failed content build
+RETRY_AFTER_SECONDS=1800
+ADMIN_API_URL="${ADMIN_API_URL:-http://127.0.0.1:8340}"
+LOCK_FILE="/var/lock/raulhandyman-deploy.lock"
+BUILD_LOG="/tmp/raulhandyman-build.log"
 PROXY_CONF_DST="/opt/infra/proxy/nginx/conf.d/raulhandyman.conf"
 
 TOTAL_STEPS=8
 log() { echo "[raulhandyman] $*"; }
 fail() { echo "[raulhandyman] ERROR: $*" >&2; exit 1; }
 
-main() {
-  local force="no"
-  if [ "${1:-}" = "--force" ]; then
-    force="yes"
+# Content version currently published in the admin app (empty if unreachable or no token).
+fetch_content_version() {
+  [ -s "${TOKEN_FILE}" ] || return 0
+  curl -fsS --max-time 10 -H "Authorization: Bearer $(cat "${TOKEN_FILE}")" \
+    "${ADMIN_API_URL}/api/site/content/version" 2>/dev/null \
+    | sed -n 's/.*"contentVersion"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' || true
+}
+
+# Tell the admin app how the build went (best effort; never fails the deploy).
+# $1 = live|failed   $2 = content version   $3 = duration ms   $4 = error text (optional)
+report_status() {
+  if [ -n "${2:-}" ]; then
+    if [ "${1}" = "failed" ]; then
+      printf '%s %s' "${2}" "$(date +%s)" > "${FAILED_FILE}"
+    else
+      rm -f "${FAILED_FILE}"
+    fi
   fi
+  [ -s "${TOKEN_FILE}" ] && [ -n "${2:-}" ] || return 0
+  local err
+  err="$(printf '%s' "${4:-}" | tr -d '"\\' | tr '\n\t' '  ' | cut -c1-1900)"
+  err="${err//$(cat "${TOKEN_FILE}")/[redacted]}"
+  curl -fsS --max-time 10 -X POST -H "Authorization: Bearer $(cat "${TOKEN_FILE}")" \
+    -H 'Content-Type: application/json' \
+    -d "{\"contentVersion\":\"${2}\",\"status\":\"${1}\",\"durationMs\":${3:-0}$( [ -n "${err}" ] && printf ',\"error\":\"%s\"' "${err}" )}" \
+    "${ADMIN_API_URL}/api/site/build-status" >/dev/null 2>&1 || log "  (could not report build status to the admin app)"
+}
+
+main() {
+  local force="no" content_only="no" arg
+  for arg in "$@"; do
+    case "${arg}" in
+      --force) force="yes" ;;
+      --content) content_only="yes" ;;
+      *) fail "Unknown option: ${arg}" ;;
+    esac
+  done
 
   [ "$(id -u)" -eq 0 ] || fail "Run this script as root."
   [ -d "${REPO_DIR}/.git" ] || fail "Repo not found at ${REPO_DIR}. Run install.sh first."
 
+  # compose.yml mounts this file as a build secret, so it must exist (empty = no admin yet).
+  [ -e "${TOKEN_FILE}" ] || install -m 600 /dev/null "${TOKEN_FILE}"
+
+  # One deploy at a time (cron content runs and manual runs must never overlap).
+  exec 9>"${LOCK_FILE}"
+  if ! flock -n 9; then
+    log "Another deploy is running. Exiting."
+    exit 0
+  fi
+
+  # Content pipeline: with a token the image build fetches published projects from the
+  # admin app; without one (no admin yet) it builds an empty portfolio, never fixtures.
+  local content_version="" started
+  started="$(date +%s)"
+  CONTENT_API_URL=""
+  if [ -s "${TOKEN_FILE}" ]; then
+    CONTENT_API_URL="${ADMIN_API_URL}"
+    content_version="$(fetch_content_version)"
+  fi
+  export CONTENT_API_URL
+
+  if [ "${content_only}" = "yes" ]; then
+    [ -s "${TOKEN_FILE}" ] || exit 0
+    if [ -z "${content_version}" ]; then
+      log "Admin API not reachable at ${ADMIN_API_URL}. Keeping the current site."
+      exit 0
+    fi
+    if [ "${content_version}" = "$(cat "${VERSION_FILE}" 2>/dev/null || true)" ] && [ "${force}" = "no" ]; then
+      exit 0
+    fi
+    # A version that failed to build is retried at most every 30 minutes (not every cron tick).
+    if [ "${force}" = "no" ] && [ -s "${FAILED_FILE}" ]; then
+      local failed_version failed_at
+      read -r failed_version failed_at < "${FAILED_FILE}" || true
+      if [ "${failed_version:-}" = "${content_version}" ] && [ $(( $(date +%s) - ${failed_at:-0} )) -lt "${RETRY_AFTER_SECONDS}" ]; then
+        exit 0
+      fi
+    fi
+    log "New content version ${content_version:0:12}. Rebuilding with the current code."
+  fi
+
   # -------------------------------------------------------------------------
   # Step 1: Fetch
   # -------------------------------------------------------------------------
-  log "[1/${TOTAL_STEPS}] Fetching ${BRANCH}..."
   cd "${REPO_DIR}"
-  git fetch origin "${BRANCH}"
   local old_commit new_commit
-  old_commit="$(git rev-parse HEAD)"
-  new_commit="$(git rev-parse "origin/${BRANCH}")"
+  if [ "${content_only}" = "yes" ]; then
+    log "[1/${TOTAL_STEPS}] Content rebuild: keeping the current code."
+    old_commit="$(git rev-parse HEAD)"
+    new_commit="${old_commit}"
+  else
+    log "[1/${TOTAL_STEPS}] Fetching ${BRANCH}..."
+    git fetch origin "${BRANCH}"
+    old_commit="$(git rev-parse HEAD)"
+    new_commit="$(git rev-parse "origin/${BRANCH}")"
+  fi
 
-  if [ "${old_commit}" = "${new_commit}" ] && [ "${force}" = "no" ]; then
+  if [ "${old_commit}" = "${new_commit}" ] && [ "${force}" = "no" ] && [ "${content_only}" = "no" ]; then
     log "  Already up to date at $(git log -1 --format='%h %s')."
     log "  Nothing to deploy. Use --force to rebuild anyway."
     exit 0
@@ -108,8 +199,9 @@ main() {
   log ""
   log "[5/${TOTAL_STEPS}] Building and restarting..."
   cd "${APP_DIR}"
-  if ! docker compose build web; then
+  if ! docker compose build web 2>&1 | tee "${BUILD_LOG}"; then
     log "  Build failed. The running site was not touched."
+    report_status failed "${content_version}" "$(( ($(date +%s) - started) * 1000 ))" "Build failed: $(tail -n 40 "${BUILD_LOG}")"
     cd "${REPO_DIR}"
     git reset --hard "${old_commit}"
     fail "Build failed. Repo reset to ${old_commit:0:7}."
@@ -123,6 +215,10 @@ main() {
   log "[6/${TOTAL_STEPS}] Health check..."
   if wait_for_health; then
     log "  Container is healthy."
+    if [ -n "${content_version}" ]; then
+      printf '%s' "${content_version}" > "${VERSION_FILE}"
+      report_status live "${content_version}" "$(( ($(date +%s) - started) * 1000 ))"
+    fi
   else
     log "  Health check FAILED. Recent logs:"
     docker logs --tail 30 "${CONTAINER}" || true
@@ -133,9 +229,11 @@ main() {
       cd "${REPO_DIR}"
       git reset --hard "${old_commit}"
       if wait_for_health; then
+        report_status failed "${content_version}" "$(( ($(date +%s) - started) * 1000 ))" "Health check failed after build; rolled back to the previous version."
         fail "Deploy failed. Rolled back to ${old_commit:0:7}; the site is running the previous version."
       fi
     fi
+    report_status failed "${content_version}" "$(( ($(date +%s) - started) * 1000 ))" "Health check failed after build; rolled back. $(docker logs --tail 20 "${CONTAINER}" 2>&1 || true)"
     fail "Deploy failed and the site is not healthy. Check: docker logs ${CONTAINER}"
   fi
 

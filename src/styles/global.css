@@ -1,3 +1,23 @@
+/* Metric-matched fallbacks (issue #36): the system font is scaled and re-spaced to the web font's metrics, so the
+   swap does not move text. Numbers are hard-coded from the latin woff2 files (xAvgCharWidth, ascender, descender)
+   against Georgia and Arial; recompute them if the fontsource version or the fallback font changes. */
+@font-face {
+  font-family: 'Fraunces Fallback';
+  src: local('Georgia');
+  size-adjust: 115.75%;
+  ascent-override: 84.49%;
+  descent-override: 22.03%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: 'Public Sans Fallback';
+  src: local('Arial');
+  size-adjust: 102.18%;
+  ascent-override: 92.98%;
+  descent-override: 22.02%;
+  line-gap-override: 0%;
+}
+
 /* Brand: navy + gold from Raul's business card. Single light theme on purpose. */
 :root {
   --navy: #0e1f3d;
@@ -13,8 +33,8 @@
   --line: #dcd8cc;
   --on-navy: #f4efe3;
   --on-navy-muted: #bcc5d5;
-  --f-display: 'Fraunces Variable', Georgia, 'Times New Roman', serif;
-  --f-body: 'Public Sans Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --f-display: 'Fraunces Variable', 'Fraunces Fallback', Georgia, 'Times New Roman', serif;
+  --f-body: 'Public Sans Variable', 'Public Sans Fallback', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --wrap: 1080px;
   color-scheme: light;
 }

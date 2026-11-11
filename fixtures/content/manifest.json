@@ -1,0 +1,296 @@
+{
+  "manifestVersion": 1,
+  "contentVersion": "0805b4150197b565153cf596df15ebc83ab4b999d65edd0403efc81d748265da",
+  "generatedAt": "2026-11-11T00:00:00Z",
+  "indexNowKey": null,
+  "projects": [
+    {
+      "id": "0b6f1d2e-1111-4a11-8a11-000000000001",
+      "slug": "fence-post-replacement-conroe",
+      "title": "Leaning fence post replaced and fence re-hung",
+      "seoTitle": "Fence Post Replacement in Conroe, TX | Raul Handyman",
+      "metaDescription": "A rotted fence post replaced and the privacy fence boards re-hung straight in Conroe, TX. See the before and after photos.",
+      "summary": "A rotted corner post was pulling a section of privacy fence over. New post, new concrete, boards re-hung.",
+      "bodyMarkdown": "## The problem\n\nOne post had rotted at the base and the whole section leaned toward the yard.\n\n## What was done\n\n- Removed the rotted post and old concrete\n- Set a new treated post in fresh concrete\n- Re-hung the existing boards and replaced two cracked ones\n\nThe fence was stained after a week so the new wood blends in.",
+      "serviceSlug": "fence-and-deck-repair",
+      "townSlug": "conroe",
+      "townName": "Conroe",
+      "completedOn": "2026-10-02",
+      "publishedAt": "2026-10-05T14:00:00Z",
+      "updatedAt": "2026-10-09T16:30:00Z",
+      "featured": true,
+      "cover": "7c1e0a00-0000-4000-8000-000000000002",
+      "ogImage": {
+        "path": "media/7c1e0a00-0000-4000-8000-000000000002/og-branded.jpg",
+        "width": 1200,
+        "height": 630
+      },
+      "photos": [
+        {
+          "id": "7c1e0a00-0000-4000-8000-000000000001",
+          "role": "before",
+          "sortOrder": 0,
+          "altText": "Wooden privacy fence with a leaning, rotted post",
+          "caption": "The leaning post before the repair",
+          "fileSlug": "fence-before",
+          "width": 1600,
+          "height": 1200,
+          "dominantColor": "#8a7f70",
+          "focal": {
+            "x": 0.5,
+            "y": 0.45
+          },
+          "renditions": {
+            "master": {
+              "path": "media/7c1e0a00-0000-4000-8000-000000000001/master.jpg",
+              "width": 1600,
+              "height": 1200,
+              "sha256": "604a92de39e2da417cba206c86e11a2c2a48ae75319bd30926d5192f4cdb6f21"
+            },
+            "card4x3": {
+              "path": "media/7c1e0a00-0000-4000-8000-000000000001/card4x3.jpg",
+              "width": 800,
+              "height": 600,
+              "sha256": "c009793e2327ab417df5dc4c21ff02b26de84a42af88eb091ce053752b32da37"
+            },
+            "hero16x9": {
+              "path": "media/7c1e0a00-0000-4000-8000-000000000001/hero16x9.jpg",
+              "width": 1280,
+              "height": 720,
+              "sha256": "a7d0749f29766fa16f57f98f53fb6b2f0d8f9e3a6f2f06253e2d37a32827c13d"
+            }
+          }
+        },
+        {
+          "id": "7c1e0a00-0000-4000-8000-000000000002",
+          "role": "after",
+          "sortOrder": 0,
+          "altText": "Wooden privacy fence standing straight with a new post",
+          "caption": "New post set in concrete, boards re-hung",
+          "fileSlug": "fence-after",
+          "width": 1600,
+          "height": 1200,
+          "dominantColor": "#a9855a",
+          "focal": {
+            "x": 0.5,
+            "y": 0.45
+          },
+          "renditions": {
+            "master": {
+              "path": "media/7c1e0a00-0000-4000-8000-000000000002/master.jpg",
+              "width": 1600,
+              "height": 1200,
+              "sha256": "72f0e105379174806f23398293356e06599e37ddc8e078c510cf843fb9b0d412"
+            },
+            "card4x3": {
+              "path": "media/7c1e0a00-0000-4000-8000-000000000002/card4x3.jpg",
+              "width": 800,
+              "height": 600,
+              "sha256": "0d6de927e09a871b5cf08f99ce336be09414e7d7d509aafa1c041e996e2f32ec"
+            },
+            "hero16x9": {
+              "path": "media/7c1e0a00-0000-4000-8000-000000000002/hero16x9.jpg",
+              "width": 1280,
+              "height": 720,
+              "sha256": "b17cea88880d059df98e194b732be25cc5453391994f26de2be02acdc19af36c"
+            }
+          }
+        },
+        {
+          "id": "7c1e0a00-0000-4000-8000-000000000003",
+          "role": "detail",
+          "sortOrder": 1,
+          "altText": "Close view of a new fence post and bracket",
+          "caption": "Post set with a galvanized bracket",
+          "fileSlug": "fence-post-detail",
+          "width": 1600,
+          "height": 1200,
+          "dominantColor": "#6f8a73",
+          "focal": {
+            "x": 0.5,
+            "y": 0.45
+          },
+          "renditions": {
+            "master": {
+              "path": "media/7c1e0a00-0000-4000-8000-000000000003/master.jpg",
+              "width": 1600,
+              "height": 1200,
+              "sha256": "e1e6a07d683e04d8f0afb5cb4fdbf828b548ae70985b72fb44c3f9312c62d284"
+            },
+            "card4x3": {
+              "path": "media/7c1e0a00-0000-4000-8000-000000000003/card4x3.jpg",
+              "width": 800,
+              "height": 600,
+              "sha256": "3d30fe7ce957a2d97b001544fbec02833c0ae6eff5bb3134a73b165b7d8efcd7"
+            },
+            "hero16x9": {
+              "path": "media/7c1e0a00-0000-4000-8000-000000000003/hero16x9.jpg",
+              "width": 1280,
+              "height": 720,
+              "sha256": "1707b0dd11c2e2befcb8543ac2c67a805c6e06f06c38056878a4b51d8177e39f"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "0b6f1d2e-2222-4a22-8a22-000000000002",
+      "slug": "drywall-hole-patch-the-woodlands",
+      "title": "Doorknob hole patched and painted",
+      "seoTitle": null,
+      "metaDescription": "A doorknob hole in a living room wall patched, textured and painted so the repair disappears. The Woodlands, TX.",
+      "summary": "A doorknob-sized hole patched, textured to match and painted.",
+      "bodyMarkdown": "The hole was cut back to solid drywall, patched, taped and finished in thin coats. The orange peel texture was matched before priming and painting the full wall for an even color.",
+      "serviceSlug": "drywall-repair",
+      "townSlug": "the-woodlands",
+      "townName": "The Woodlands",
+      "completedOn": null,
+      "publishedAt": "2026-09-20T15:00:00Z",
+      "updatedAt": "2026-09-20T15:00:00Z",
+      "featured": false,
+      "cover": "7c1e0a00-0000-4000-8000-000000000004",
+      "ogImage": {
+        "path": "media/7c1e0a00-0000-4000-8000-000000000004/og-branded.jpg",
+        "width": 1200,
+        "height": 630
+      },
+      "photos": [
+        {
+          "id": "7c1e0a00-0000-4000-8000-000000000004",
+          "role": "after",
+          "sortOrder": 0,
+          "altText": "Smooth painted wall where a hole was patched",
+          "caption": "Patched, textured and painted to match",
+          "fileSlug": "drywall-after",
+          "width": 1600,
+          "height": 1200,
+          "dominantColor": "#d8d2c4",
+          "focal": {
+            "x": 0.5,
+            "y": 0.45
+          },
+          "renditions": {
+            "master": {
+              "path": "media/7c1e0a00-0000-4000-8000-000000000004/master.jpg",
+              "width": 1600,
+              "height": 1200,
+              "sha256": "ec68c6463752250b556f0ce86735f97852de6b3bada9c0d565567c44213617b7"
+            },
+            "card4x3": {
+              "path": "media/7c1e0a00-0000-4000-8000-000000000004/card4x3.jpg",
+              "width": 800,
+              "height": 600,
+              "sha256": "bf634b2c4e3dcedf848b4e8623352ec9263f49adb9cc0dfae518c30edd5596af"
+            },
+            "hero16x9": {
+              "path": "media/7c1e0a00-0000-4000-8000-000000000004/hero16x9.jpg",
+              "width": 1280,
+              "height": 720,
+              "sha256": "415c0b73f7707dbae8e3447fed913378175b189cee0f69f54277aea9b20b8fea"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "0b6f1d2e-3333-4a33-8a33-000000000003",
+      "slug": "door-casing-replacement-montgomery",
+      "title": "Interior door casing replaced",
+      "seoTitle": "Door Casing Replacement in Montgomery, TX | Raul Handyman",
+      "metaDescription": "Damaged interior door casing replaced with new trim, caulked and painted in Montgomery, TX.",
+      "summary": "Chewed and cracked door casing swapped for new trim, caulked and painted.",
+      "bodyMarkdown": "## Scope\n\nThe old casing was cracked and pulling away from the wall. It was removed, the gaps filled, and new casing was mitered, nailed, caulked and painted.",
+      "serviceSlug": "doors-and-trim",
+      "townSlug": "montgomery",
+      "townName": "Montgomery",
+      "completedOn": "2026-08-14",
+      "publishedAt": "2026-08-18T13:00:00Z",
+      "updatedAt": "2026-11-01T12:00:00Z",
+      "featured": false,
+      "cover": "7c1e0a00-0000-4000-8000-000000000006",
+      "ogImage": {
+        "path": "media/7c1e0a00-0000-4000-8000-000000000006/og-branded.jpg",
+        "width": 1200,
+        "height": 630
+      },
+      "photos": [
+        {
+          "id": "7c1e0a00-0000-4000-8000-000000000005",
+          "role": "progress",
+          "sortOrder": 0,
+          "altText": "Interior door frame with new trim being fitted",
+          "caption": null,
+          "fileSlug": "door-progress",
+          "width": 1600,
+          "height": 1200,
+          "dominantColor": "#9a7b57",
+          "focal": {
+            "x": 0.5,
+            "y": 0.45
+          },
+          "renditions": {
+            "master": {
+              "path": "media/7c1e0a00-0000-4000-8000-000000000005/master.jpg",
+              "width": 1600,
+              "height": 1200,
+              "sha256": "75f65267a70f421379947b3c7cbd6a05e583903faedeb6007aa399d66df7721b"
+            },
+            "card4x3": {
+              "path": "media/7c1e0a00-0000-4000-8000-000000000005/card4x3.jpg",
+              "width": 800,
+              "height": 600,
+              "sha256": "1d0377700d9af7fb32d7f4d94423161b9290265311e4a3d80cb3f2a653ebff08"
+            },
+            "hero16x9": {
+              "path": "media/7c1e0a00-0000-4000-8000-000000000005/hero16x9.jpg",
+              "width": 1280,
+              "height": 720,
+              "sha256": "bc572e1cbcfd9de9e329c74644b97d54ea56fb4a679bc56c4add877ebce5fb09"
+            }
+          }
+        },
+        {
+          "id": "7c1e0a00-0000-4000-8000-000000000006",
+          "role": "after",
+          "sortOrder": 1,
+          "altText": "Interior door with new painted trim and casing",
+          "caption": "New casing, caulked and painted",
+          "fileSlug": "door-after",
+          "width": 1600,
+          "height": 1200,
+          "dominantColor": "#e9e2d3",
+          "focal": {
+            "x": 0.5,
+            "y": 0.45
+          },
+          "renditions": {
+            "master": {
+              "path": "media/7c1e0a00-0000-4000-8000-000000000006/master.jpg",
+              "width": 1600,
+              "height": 1200,
+              "sha256": "49de204904019b8e8ba44e622106fc80c97fff0ee1efc754b464ffed2302c501"
+            },
+            "card4x3": {
+              "path": "media/7c1e0a00-0000-4000-8000-000000000006/card4x3.jpg",
+              "width": 800,
+              "height": 600,
+              "sha256": "47525465103bc87b2d8578f8fffed1e89b5416ba3a02762b270e344663560700"
+            },
+            "hero16x9": {
+              "path": "media/7c1e0a00-0000-4000-8000-000000000006/hero16x9.jpg",
+              "width": 1280,
+              "height": 720,
+              "sha256": "4aaf726bd1920a47d62c1ef9bc76286ead81abccaea5ac1562baae2ae06b2b41"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "redirects": [
+    {
+      "from": "/projects/door-trim-fix-montgomery/",
+      "to": "/projects/door-casing-replacement-montgomery/"
+    }
+  ]
+}
