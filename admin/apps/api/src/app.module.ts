@@ -8,6 +8,7 @@ import { RegistryFreezeService } from '@marinoscar/platform-api/core';
 
 import configuration from './config/configuration';
 import { NotesModule } from './notes/notes.module';
+import { ProjectsModule } from './projects/projects.module';
 import { PLATFORM_MODULES } from './platform/platform';
 import { PrismaModule } from './prisma/prisma.service';
 
@@ -25,6 +26,7 @@ import { PrismaModule } from './prisma/prisma.service';
     ...PLATFORM_MODULES,
     // The app's features.
     NotesModule,
+    ProjectsModule,
   ],
   providers: [
     { provide: APP_PIPE, useClass: ZodValidationPipe },

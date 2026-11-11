@@ -1,31 +1,44 @@
 ---
-// The one place project photos become <img>/<picture>. Delivery (formats, widths, priority) is tuned here.
-import { Picture } from 'astro:assets';
-import type { ProjectPhoto } from '../data/projects';
+// The one place photos become <picture>/<img>. Formats, widths, quality and priority are tuned in data/photo.ts.
+import { deliverPhoto } from '../data/photo';
 
 interface Props {
-  photo: ProjectPhoto;
-  rendition?: 'master' | 'card4x3' | 'hero16x9';
+  src: ImageMetadata;
+  alt: string;
+  /** Exact `sizes` for the slot; must match the CSS. */
+  sizes: string;
   widths?: number[];
-  sizes?: string;
-  loading?: 'lazy' | 'eager';
-  fetchpriority?: 'high' | 'low' | 'auto';
-  alt?: string;
+  /** LCP image: eager, fetchpriority=high, sync decode. Everything else is lazy and async. */
+  priority?: boolean;
+  aspect?: '4/3' | '16/9' | 'auto';
+  /** Placeholder colour painted behind the image while it loads. */
+  bg?: string | null;
   class?: string;
 }
-const { photo, rendition = 'card4x3', widths = [400, 800], sizes = '100vw', loading = 'lazy', fetchpriority, alt = photo.altText, class: cls } = Astro.props;
-const src = photo.renditions[rendition];
+const { src, alt, sizes, widths, priority = false, aspect = 'auto', bg, class: cls } = Astro.props;
+const d = await deliverPhoto(src, widths);
+const style = [bg ? `--ph-bg:${bg}` : '', aspect !== 'auto' ? `aspect-ratio:${aspect.replace('/', ' / ')}` : ''].filter(Boolean).join(';');
 ---
-<Picture
-  src={src}
-  alt={alt}
-  widths={widths}
-  sizes={sizes}
-  formats={['avif', 'webp']}
-  fallbackFormat="jpg"
-  loading={loading}
-  fetchpriority={fetchpriority}
-  decoding={loading === 'eager' ? 'sync' : 'async'}
-  class={cls}
-  style={photo.dominantColor ? `background:${photo.dominantColor}` : undefined}
-/>
+<span class:list={['ph', cls]} style={style || undefined} data-aspect={aspect !== 'auto' ? aspect : undefined}>
+  <picture>
+    {d.sources.map((s) => <source type={s.type} srcset={s.srcset} sizes={sizes} />)}
+    <img
+      src={d.img.src}
+      srcset={d.img.srcset}
+      sizes={sizes}
+      width={d.img.width}
+      height={d.img.height}
+      alt={alt}
+      loading={priority ? 'eager' : 'lazy'}
+      decoding={priority ? 'sync' : 'async'}
+      fetchpriority={priority ? 'high' : undefined}
+    />
+  </picture>
+</span>
+
+<style>
+  .ph { display: block; background: var(--ph-bg, transparent); overflow: hidden; }
+  picture { display: contents; }
+  img { display: block; max-width: 100%; height: auto; }
+  .ph[data-aspect] img { width: 100%; height: 100%; object-fit: cover; }
+</style>

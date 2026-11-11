@@ -56,3 +56,14 @@ export declare function resolveSliceIds(
 ): readonly SliceId[];
 /** The slices this app mounts: `slices.json` `enabled`, validated, in mount order. */
 export declare const ENABLED_SLICES: readonly SliceId[];
+/** The project SEO lint (pure; shared by the API and the web editor). Also importable as `@app/shared/seo-lint`. */
+export { lintProject, SLUG_PATTERN } from './seo-lint';
+export { LIMITS as SEO_LINT_LIMITS } from './seo-lint';
+export type {
+  LintCatalog,
+  LintIssue,
+  LintPhotoInput,
+  LintProjectInput,
+  LintResult,
+  LintSiblingInput,
+} from './seo-lint';

@@ -6,6 +6,7 @@ import Photo from '../../components/Photo.astro';
 import ProjectStrip from '../../components/ProjectStrip.astro';
 import { business } from '../../data/site';
 import { getProjects, coverOf, monthYear, projectPath, relatedTo, serviceOf, splitPhotos, type Project } from '../../data/projects';
+import { preloadFor } from '../../data/photo';
 import { renderMarkdown } from '../../data/markdown';
 import { projectSchema, projectBreadcrumbSchema } from '../../data/schema';
 
@@ -30,6 +31,8 @@ for (const ph of p.photos) {
 const title = p.seoTitle || `${p.title} | ${business.name}`;
 const schema = [projectSchema(p, images), projectBreadcrumbSchema(p)];
 const ogAlt = cover.altText;
+const heroSizes = '(min-width: 1080px) 1080px, 100vw';
+const preloadImage = await preloadFor(cover.renditions.hero16x9, heroSizes);
 const common = svc?.jobs.slice(0, 3) ?? [];
 ---
 
@@ -41,6 +44,7 @@ const common = svc?.jobs.slice(0, 3) ?? [];
   ogImage={{ src: `/og/projects/${p.slug}.jpg`, width: 1200, height: 630, alt: ogAlt }}
   publishedTime={p.publishedAt}
   modifiedTime={p.updatedAt}
+  preloadImage={preloadImage}
 >
   <section class="proj-hero band on-navy">
     <div class="wrap">
@@ -53,7 +57,7 @@ const common = svc?.jobs.slice(0, 3) ?? [];
         {svc && <a href={`/${svc.slug}/`}>{svc.name}</a>}
       </p>
       <div class="cover">
-        <Photo photo={cover} rendition="hero16x9" widths={[480, 800, 1200, 1600]} sizes="(min-width: 1112px) 1080px, calc(100vw - 32px)" loading="eager" fetchpriority="high" />
+        <Photo src={cover.renditions.hero16x9} alt={cover.altText} bg={cover.dominantColor} aspect="16/9" sizes={heroSizes} priority />
       </div>
     </div>
   </section>
@@ -66,8 +70,8 @@ const common = svc?.jobs.slice(0, 3) ?? [];
           {pairs.map((pair) => (
             <figure class="pair">
               <div class="pair-grid">
-                <div class="side"><span class="tag">Before</span><Photo photo={pair.before} rendition="card4x3" widths={[400, 700, 1000]} sizes="(min-width: 700px) 520px, calc(100vw - 32px)" /></div>
-                <div class="side"><span class="tag after">After</span><Photo photo={pair.after} rendition="card4x3" widths={[400, 700, 1000]} sizes="(min-width: 700px) 520px, calc(100vw - 32px)" /></div>
+                <div class="side"><span class="tag">Before</span><Photo src={pair.before.renditions.card4x3} alt={pair.before.altText} bg={pair.before.dominantColor} aspect="4/3" widths={[480, 800, 1200]} sizes="(min-width: 700px) 520px, calc(100vw - 32px)" /></div>
+                <div class="side"><span class="tag after">After</span><Photo src={pair.after.renditions.card4x3} alt={pair.after.altText} bg={pair.after.dominantColor} aspect="4/3" widths={[480, 800, 1200]} sizes="(min-width: 700px) 520px, calc(100vw - 32px)" /></div>
               </div>
               {(pair.after.caption || pair.before.caption) && (
                 <figcaption>{[pair.before.caption, pair.after.caption].filter(Boolean).join(' → ')}</figcaption>
@@ -107,7 +111,7 @@ const common = svc?.jobs.slice(0, 3) ?? [];
           {gallery.map((ph) => (
             <li>
               <figure>
-                <Photo photo={ph} rendition="card4x3" widths={[360, 560, 800]} sizes="(min-width: 800px) 340px, (min-width: 500px) 45vw, 92vw" />
+                <Photo src={ph.renditions.card4x3} alt={ph.altText} bg={ph.dominantColor} aspect="4/3" widths={[480, 800]} sizes="(min-width: 1080px) 340px, (min-width: 700px) 45vw, 92vw" />
                 {ph.caption && <figcaption>{ph.caption}</figcaption>}
               </figure>
             </li>
@@ -145,7 +149,7 @@ const common = svc?.jobs.slice(0, 3) ?? [];
   .tag.after { background: var(--gold-bright); color: #14100a; }
   figcaption { color: var(--muted); font-size: .92rem; }
 
-  .about { padding-top: 0; }
+  .about { padding-top: 48px; }
   .body-grid { display: grid; gap: 40px; align-items: start; }
   @media (min-width: 860px) { .body-grid { grid-template-columns: 1.5fr 1fr; } }
   .prose h2 { font-size: 1.5rem; font-weight: 700; }

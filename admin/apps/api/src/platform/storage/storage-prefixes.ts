@@ -17,5 +17,19 @@ export const NOTE_ATTACHMENTS_KEY_PREFIX: StorageKeyPrefixDef = {
   description: 'Files attached to a note, under note-attachments/<userId>/',
 };
 
+/**
+ * Project photos and every rendition the photo job writes:
+ * `project-media/<orgId>/<projectId>/<photoId>/<rendition>.<ext>`. Org-scoped,
+ * so an organization offboarding can list its own media. Build keys with
+ * `buildObjectKey('project-media', { orgId }, projectId, photoId, name)`.
+ */
+export const PROJECT_MEDIA_KEY_PREFIX: StorageKeyPrefixDef = {
+  id: 'project-media',
+  prefix: 'project-media/',
+  owner: 'projects',
+  scope: 'org',
+  description: 'Project photo renditions (enhanced, crops, OG), under project-media/<orgId>/<projectId>/<photoId>/',
+};
+
 /** Every prefix this app adds. Append here. */
-export const APP_STORAGE_KEY_PREFIXES: readonly StorageKeyPrefixDef[] = [NOTE_ATTACHMENTS_KEY_PREFIX];
+export const APP_STORAGE_KEY_PREFIXES: readonly StorageKeyPrefixDef[] = [NOTE_ATTACHMENTS_KEY_PREFIX, PROJECT_MEDIA_KEY_PREFIX];

@@ -4,9 +4,10 @@ import { coverOf, projectPath, serviceOf, type Project } from '../data/projects'
 interface Props { project: Project; }
 const { project: p } = Astro.props;
 const svc = serviceOf(p);
+const cover = coverOf(p);
 ---
 <article class="pcard">
-  <div class="thumb"><Photo photo={coverOf(p)} rendition="card4x3" widths={[360, 560, 800]} sizes="(min-width: 800px) 340px, (min-width: 500px) 45vw, 92vw" /></div>
+  <div class="thumb"><Photo src={cover.renditions.card4x3} alt={cover.altText} bg={cover.dominantColor} aspect="4/3" widths={[480, 800]} sizes="(min-width: 1080px) 340px, (min-width: 700px) 45vw, 92vw" /></div>
   <div class="txt">
     <span class="eyebrow">{svc ? svc.tag : 'Project'} · {p.townName}</span>
     <h3><a href={projectPath(p)}>{p.title}</a></h3>

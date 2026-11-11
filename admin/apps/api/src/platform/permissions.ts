@@ -24,11 +24,9 @@ export const PERMISSION_OPTIONS = {
     roles: [PROJECTS_ROLES],
     permissions: [NOTES_PERMISSIONS, PROJECTS_PERMISSIONS],
     // `ai:use` and `storage:*` exist only while those slices are mounted.
-    grants: [
-      {
-        role: 'content_editor',
-        permissions: PROJECT_ROLE_GRANTS[0].permissions.filter((id) => (id === 'ai:use' ? isSliceEnabled('ai') : isSliceEnabled('storage'))),
-      },
-    ],
+    grants: PROJECT_ROLE_GRANTS.map((grant) => ({
+      role: grant.role,
+      permissions: grant.permissions.filter((id) => (id === 'ai:use' ? isSliceEnabled('ai') : isSliceEnabled('storage'))),
+    })).filter((grant) => grant.permissions.length > 0),
   },
 } satisfies PlatformPermissionOptions;

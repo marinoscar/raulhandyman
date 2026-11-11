@@ -14,6 +14,7 @@
 // core's `maintenance` namespace is registered by `PlatformHostCoreModule.forRoot()`,
 // first in PLATFORM_MODULES, so before `SettingsModule.forRoot()` too.)
 import '../notes/notes.settings';
+import '../projects/projects.settings';
 import './storage.settings';
 // Everything the enabled slices add to the registries (settings namespaces,
 // credential purposes, storage prefixes, notifications, onboarding steps...).

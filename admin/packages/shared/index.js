@@ -73,3 +73,9 @@ exports.resolveSliceIds = resolveSliceIds;
 
 /** The ids in `slices.json` `enabled`, validated, in mount order. */
 exports.ENABLED_SLICES = Object.freeze(resolveSliceIds(manifest.enabled));
+
+// The SEO lint of a project, shared by the API (enforcement) and the web (live checklist).
+const seoLint = require('./seo-lint');
+exports.lintProject = seoLint.lintProject;
+exports.SEO_LINT_LIMITS = seoLint.LIMITS;
+exports.SLUG_PATTERN = seoLint.SLUG_PATTERN;

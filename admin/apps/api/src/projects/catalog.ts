@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import catalogJson from './catalog.json';
+import catalogJson = require('./catalog.json');
 
 /**
  * The service and town catalog the public site and this API share. The JSON is

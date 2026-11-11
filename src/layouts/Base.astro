@@ -71,6 +71,10 @@ const iso = (d?: Date | string) => (d ? new Date(d).toISOString() : undefined);
     <meta name="twitter:image" content={ogImage} />
     <meta name="twitter:image:alt" content={og.alt} />
 
+    <script type="speculationrules" is:inline>
+      {"prerender":[{"where":{"and":[{"href_matches":"/*"},{"not":{"href_matches":["/*.xml","/*.txt","/og/*"]}}]},"eagerness":"moderate"}],"prefetch":[{"where":{"href_matches":"/projects/*"},"eagerness":"conservative"}]}
+    </script>
+
     {schema.map((s) => <script type="application/ld+json" set:html={JSON.stringify(s)} />)}
   </head>
   <body>

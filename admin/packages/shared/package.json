@@ -12,12 +12,18 @@
       "default": "./index.js"
     },
     "./identity.json": "./identity.json",
-    "./slices.json": "./slices.json"
+    "./slices.json": "./slices.json",
+    "./seo-lint": {
+      "types": "./seo-lint.d.ts",
+      "default": "./seo-lint.js"
+    }
   },
   "files": [
     "index.js",
     "index.d.ts",
     "identity.json",
-    "slices.json"
+    "slices.json",
+    "seo-lint.js",
+    "seo-lint.d.ts"
   ]
 }
