@@ -6,6 +6,7 @@
     "outDir": "./dist",
     "rootDir": ".",
     "noFallthroughCasesInSwitch": true,
+    "resolveJsonModule": true,
     "types": ["node", "jest"]
   },
   "include": ["src/**/*", "test/**/*", "prisma/**/*.ts"],

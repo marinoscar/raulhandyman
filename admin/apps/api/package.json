@@ -10,6 +10,8 @@
     "start": "node dist/main.js",
     "start:dev": "nest start --watch",
     "typecheck": "tsc --noEmit",
+    "catalog:sync": "node scripts/catalog-sync.js",
+    "catalog:check": "node scripts/catalog-sync.js --check",
     "test": "jest --config ./test/jest.config.js --testPathIgnorePatterns='\\.db\\.spec\\.ts$'",
     "test:db": "jest --config ./test/jest.config.js --testRegex '\\.db\\.spec\\.ts$' --runInBand",
     "prisma": "node scripts/prisma-env.js",

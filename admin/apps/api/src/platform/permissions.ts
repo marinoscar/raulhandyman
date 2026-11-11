@@ -16,13 +16,19 @@ import type { PlatformPermissionOptions } from '@marinoscar/platform-api/manifes
 
 import { NOTES_PERMISSIONS } from '../notes/notes.permissions';
 import { PROJECTS_PERMISSIONS, PROJECTS_ROLES, PROJECT_ROLE_GRANTS } from '../projects/projects.permissions';
-import { enabledPermissionSlices } from './slices/manifest';
+import { enabledPermissionSlices, isSliceEnabled } from './slices/manifest';
 
 export const PERMISSION_OPTIONS = {
   slices: ['identity', 'settings', 'jobs', 'nodes', 'user-data', ...enabledPermissionSlices()],
   app: {
     roles: [PROJECTS_ROLES],
     permissions: [NOTES_PERMISSIONS, PROJECTS_PERMISSIONS],
-    grants: PROJECT_ROLE_GRANTS,
+    // `ai:use` and `storage:*` exist only while those slices are mounted.
+    grants: [
+      {
+        role: 'content_editor',
+        permissions: PROJECT_ROLE_GRANTS[0].permissions.filter((id) => (id === 'ai:use' ? isSliceEnabled('ai') : isSliceEnabled('storage'))),
+      },
+    ],
   },
 } satisfies PlatformPermissionOptions;
