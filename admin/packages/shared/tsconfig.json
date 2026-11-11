@@ -1,0 +1,11 @@
+{
+  "$comment": "Stops tools that look up the nearest tsconfig (Vite/oxc) from walking up to the Astro site's root tsconfig, which needs the site's node_modules.",
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": false,
+    "module": "commonjs",
+    "target": "es2022",
+    "noEmit": true
+  },
+  "include": ["*.js", "*.d.ts"]
+}
