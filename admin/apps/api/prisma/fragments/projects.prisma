@@ -1,0 +1,134 @@
+// The handyman site's projects: the portfolio entries editors write and publish.
+// All three tables belong to the ORGANIZATION (several editors share them), so
+// each carries `org_id` and the migration enables and forces row-level security
+// (the `<table>_org_isolation` policy). They are classified `org` in
+// `src/projects/projects.ownership.ts`. `createdById` / `updatedById` only
+// record who acted: they are nullable with `onDelete: SetNull` (registered as
+// actor fields, purge `detach`), so removing an editor never deletes a project.
+// Storage object ids are plain UUID columns, deliberately not foreign keys.
+
+enum ProjectStatus {
+  draft
+  published
+  archived
+}
+
+enum PhotoRole {
+  before
+  after
+  progress
+  detail
+}
+
+enum PhotoVariant {
+  original
+  enhanced
+  retouched
+}
+
+enum PhotoProcessing {
+  pending
+  processing
+  ready
+  failed
+}
+
+model Project {
+  id              String        @id @default(uuid()) @db.Uuid
+  orgId           String        @map("org_id") @db.Uuid
+  slug            String
+  previousSlugs   String[]      @default([]) @map("previous_slugs")
+  status          ProjectStatus @default(draft)
+  title           String        @default("")
+  serviceSlug     String        @map("service_slug")
+  townSlug        String        @map("town_slug")
+  workNotes       String        @default("") @map("work_notes") // private, never published
+  summary         String        @default("")
+  body            String        @default("") // markdown
+  seoTitle        String        @default("") @map("seo_title")
+  metaDescription String        @default("") @map("meta_description")
+  completedOn     DateTime?     @map("completed_on") @db.Date
+  featured        Boolean       @default(false)
+  coverPhotoId    String?       @map("cover_photo_id") @db.Uuid
+  aiSuggestion    Json?         @map("ai_suggestion")
+  publishedAt     DateTime?     @map("published_at") @db.Timestamptz
+  version         Int           @default(1)
+  createdById     String?       @map("created_by_id") @db.Uuid
+  updatedById     String?       @map("updated_by_id") @db.Uuid
+  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime      @updatedAt @map("updated_at") @db.Timestamptz
+
+  org       Organization   @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  createdBy User?          @relation("ProjectCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy User?          @relation("ProjectUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  photos    ProjectPhoto[]
+
+  @@unique([orgId, slug])
+  @@unique([id, orgId])
+  @@index([orgId, status, publishedAt])
+  @@map("projects")
+}
+
+model ProjectPhoto {
+  id                String          @id @default(uuid()) @db.Uuid
+  orgId             String          @map("org_id") @db.Uuid
+  projectId         String          @map("project_id") @db.Uuid
+  sortOrder         Int             @default(0) @map("sort_order")
+  role              PhotoRole
+  originalObjectId  String          @map("original_object_id") @db.Uuid
+  enhancedObjectId  String?         @map("enhanced_object_id") @db.Uuid
+  retouchedObjectId String?         @map("retouched_object_id") @db.Uuid
+  chosenVariant     PhotoVariant    @default(enhanced) @map("chosen_variant")
+  renditions        Json? // { card4x3, hero16x9, og, thumb } -> storage object ids + width/height
+  focalX            Float           @default(0.5) @map("focal_x")
+  focalY            Float           @default(0.5) @map("focal_y")
+  width             Int?
+  height            Int?
+  dominantColor     String?         @map("dominant_color")
+  altText           String          @default("") @map("alt_text")
+  caption           String          @default("")
+  fileSlug          String          @default("") @map("file_slug")
+  qualityFlags      String[]        @default([]) @map("quality_flags")
+  privacyFlags      String[]        @default([]) @map("privacy_flags")
+  processingStatus  PhotoProcessing @default(pending) @map("processing_status")
+  processingError   String?         @map("processing_error")
+  aiSuggestion      Json?           @map("ai_suggestion")
+  aiRetouched       Boolean         @default(false) @map("ai_retouched")
+  createdById       String?         @map("created_by_id") @db.Uuid
+  createdAt         DateTime        @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt         DateTime        @updatedAt @map("updated_at") @db.Timestamptz
+
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  project   Project      @relation(fields: [projectId, orgId], references: [id, orgId], onDelete: Cascade)
+  createdBy User?        @relation("ProjectPhotoCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([projectId, sortOrder])
+  @@index([orgId])
+  @@map("project_photos")
+}
+
+model SitePublishState {
+  orgId            String    @id @map("org_id") @db.Uuid
+  contentVersion   String    @default("") @map("content_version")
+  lastPublishedAt  DateTime? @map("last_published_at") @db.Timestamptz
+  lastBuildVersion String?   @map("last_build_version")
+  lastBuildAt      DateTime? @map("last_build_at") @db.Timestamptz
+  lastBuildStatus  String?   @map("last_build_status")
+  lastBuildError   String?   @map("last_build_error")
+
+  org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@map("site_publish_state")
+}
+
+extend model User {
+  projectsCreated Project[]      @relation("ProjectCreatedBy")
+  projectsUpdated Project[]      @relation("ProjectUpdatedBy")
+  projectPhotos   ProjectPhoto[] @relation("ProjectPhotoCreatedBy")
+}
+
+extend model Organization {
+  projects         Project[]
+  projectPhotos    ProjectPhoto[]
+  sitePublishState SitePublishState?
+}

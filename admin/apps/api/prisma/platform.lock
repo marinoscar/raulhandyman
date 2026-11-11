@@ -265,6 +265,24 @@
       "name": "documents_org_isolation",
       "table": "documents",
       "usingSha256": "83e7bb1689b1bd0427e7061bf085f69c35922ba56bedf6275925f52e58cb440b"
+    },
+    {
+      "checkSha256": "83e7bb1689b1bd0427e7061bf085f69c35922ba56bedf6275925f52e58cb440b",
+      "name": "projects_org_isolation",
+      "table": "projects",
+      "usingSha256": "83e7bb1689b1bd0427e7061bf085f69c35922ba56bedf6275925f52e58cb440b"
+    },
+    {
+      "checkSha256": "83e7bb1689b1bd0427e7061bf085f69c35922ba56bedf6275925f52e58cb440b",
+      "name": "project_photos_org_isolation",
+      "table": "project_photos",
+      "usingSha256": "83e7bb1689b1bd0427e7061bf085f69c35922ba56bedf6275925f52e58cb440b"
+    },
+    {
+      "checkSha256": "83e7bb1689b1bd0427e7061bf085f69c35922ba56bedf6275925f52e58cb440b",
+      "name": "site_publish_state_org_isolation",
+      "table": "site_publish_state",
+      "usingSha256": "83e7bb1689b1bd0427e7061bf085f69c35922ba56bedf6275925f52e58cb440b"
     }
   ]
 }

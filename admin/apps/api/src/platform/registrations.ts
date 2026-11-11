@@ -12,9 +12,10 @@ import {
 } from '@marinoscar/platform-api/manifest';
 
 import { DOCUMENT_MODEL_OWNERSHIP, DOCUMENT_USER_OWNED_MODELS } from '../documents/documents.ownership';
+import { PROJECT_MODEL_OWNERSHIP, PROJECT_USER_OWNED_MODELS } from '../projects/projects.ownership';
 import { APP_MODEL_OWNERSHIP, APP_USER_OWNED_MODELS } from '../notes/notes.ownership';
 import { PERMISSION_OPTIONS } from './permissions';
 
 registerPlatformPermissions(PERMISSION_OPTIONS);
-registerPlatformUserOwnedModels([...APP_USER_OWNED_MODELS, ...DOCUMENT_USER_OWNED_MODELS]);
-registerPlatformModelOwnership([...APP_MODEL_OWNERSHIP, ...DOCUMENT_MODEL_OWNERSHIP]);
+registerPlatformUserOwnedModels([...APP_USER_OWNED_MODELS, ...DOCUMENT_USER_OWNED_MODELS, ...PROJECT_USER_OWNED_MODELS]);
+registerPlatformModelOwnership([...APP_MODEL_OWNERSHIP, ...DOCUMENT_MODEL_OWNERSHIP, ...PROJECT_MODEL_OWNERSHIP]);
