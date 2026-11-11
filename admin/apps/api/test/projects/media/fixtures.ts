@@ -1,6 +1,10 @@
 // Synthetic image fixtures, generated in the tests: no binary files, no real photos.
 import sharp from 'sharp';
 
+// The scenes are built pixel by pixel in JS and the media specs decode and re-encode multi-megapixel
+// images, which is slow on a small CI runner. Give these specs room; correctness is asserted, not speed.
+jest.setTimeout(180_000);
+
 /** A small deterministic pseudo-random generator (LCG), so fixtures are identical on every run. */
 export function rng(seed = 1): () => number {
   let state = seed >>> 0;
@@ -24,7 +28,19 @@ export interface SceneOptions {
  * A photo-like RGB scene: a vertical gradient, a grid of coloured blocks (hard
  * edges) and noise. Returns raw RGB pixels.
  */
+const sceneCache = new Map<string, Buffer>();
+
 export function sceneRaw(width: number, height: number, opts: SceneOptions = {}): Buffer {
+  // Memoized: the same scene is requested by many tests. Callers never mutate the returned buffer.
+  const key = JSON.stringify([width, height, opts]);
+  const cached = sceneCache.get(key);
+  if (cached) return cached;
+  const built = buildScene(width, height, opts);
+  sceneCache.set(key, built);
+  return built;
+}
+
+function buildScene(width: number, height: number, opts: SceneOptions): Buffer {
   const { cast = [1, 1, 1], brightness = 1, noise = 14, seed = 7 } = opts;
   const rand = rng(seed);
   const data = Buffer.alloc(width * height * 3);

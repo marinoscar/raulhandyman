@@ -119,6 +119,7 @@ describe('enhance', () => {
   });
 
   it('keeps the sceneRaw fixture deterministic', () => {
-    expect(sceneRaw(16, 16).equals(sceneRaw(16, 16))).toBe(true);
+    // A different cache key (explicit default noise), so the two buffers are built independently.
+    expect(sceneRaw(16, 16).equals(sceneRaw(16, 16, { noise: 14 }))).toBe(true);
   });
 });
