@@ -208,7 +208,9 @@ export class SuggestJobHandler implements JobHandler, OnModuleInit {
         for (const row of photoOutputs) {
           const { photoId, ...rest } = row;
           if (!currentPhotos.has(photoId)) continue;
-          await tx.projectPhoto.update({ where: { id: photoId }, data: { aiSuggestion: asJson({ ...meta, output: rest }) } });
+          // The privacy flags are also kept on the photo row (replacing the set), where the editor reads them; same write as the suggestion.
+          const flags = Array.isArray(rest.privacyFlags) ? [...new Set(rest.privacyFlags.filter((flag): flag is string => typeof flag === 'string'))] : null;
+          await tx.projectPhoto.update({ where: { id: photoId }, data: { aiSuggestion: asJson({ ...meta, output: rest }), ...(flags ? { privacyFlags: flags } : {}) } });
         }
       }
     });

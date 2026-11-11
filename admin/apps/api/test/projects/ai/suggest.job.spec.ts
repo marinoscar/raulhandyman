@@ -48,11 +48,23 @@ describe('projects.ai.suggest job', () => {
 
     expect(t.writes.photos.map((write) => write.id).sort()).toEqual([PHOTO_1, PHOTO_2]);
     for (const write of t.writes.photos) {
-      expect(Object.keys(write.data)).toEqual(['aiSuggestion']);
+      expect(Object.keys(write.data).sort()).toEqual(['aiSuggestion', 'privacyFlags']);
+      expect(write.data.privacyFlags).toEqual([]);
       expect(write.data.aiSuggestion.output.altText).toContain('Patched drywall');
     }
     expect(t.project.title).toBe('');
     expect(t.events.publishSuggestReady).toHaveBeenCalledWith({ orgId: ORG, projectId: PROJECT, userId: USER, jobId: 'job-1' });
+  });
+
+  it('replaces each photo\'s privacyFlags with the model\'s flags in the same write as the suggestion', async () => {
+    const answer = copyAnswer([PHOTO_1, PHOTO_2]);
+    answer.photos[0]!.privacyFlags = ['house_number', 'person'] as never;
+    const t = build({ script: [{ outputText: JSON.stringify(answer) }] });
+    await t.handler.process(job());
+    const first = t.writes.photos.find((write) => write.id === PHOTO_1)!;
+    expect(first.data.privacyFlags).toEqual(['house_number', 'person']);
+    expect(first.data.aiSuggestion.output.privacyFlags).toEqual(['house_number', 'person']);
+    expect(t.writes.photos.find((write) => write.id === PHOTO_2)!.data.privacyFlags).toEqual([]);
   });
 
   it('sends the images as data URLs, the notes, the grounding prompt and the feature id; nothing else leaks', async () => {

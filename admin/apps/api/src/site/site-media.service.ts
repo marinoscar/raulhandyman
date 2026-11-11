@@ -34,6 +34,8 @@ type StoredRendition = { objectId?: string; w?: number; h?: number };
 type Source = { objectId: string; width: number | null; height: number | null; normalise: boolean };
 
 const FILE_EXTENSION = 'jpg';
+/** The stored key of a retouched crop, by the rendition it replaces (`RETOUCHED_RENDITION_KEYS` of the retouch job). */
+const RETOUCHED_CROP_KEYS: Partial<Record<SiteMediaRendition, string>> = { card4x3: 'retouchedCard4x3', hero16x9: 'retouchedHero16x9' };
 /** Descriptors kept in memory (sha256 and size only, never bytes). */
 const CACHE_LIMIT = 5000;
 
@@ -71,7 +73,12 @@ export class SiteMediaService {
       const enhanced = objectId === photo.enhancedObjectId;
       return { objectId, width: photo.width, height: photo.height, normalise: !enhanced };
     }
-    const key = rendition === 'og-branded' ? (stored.ogBranded?.objectId ? 'ogBranded' : 'og') : rendition;
+    // A photo whose chosen variant is the AI retouch serves the retouched crops (the retouch job stores them
+    // under flat `retouched*` keys); a missing one falls back to the standard crop. LIMITATION: the branded OG
+    // (`ogBranded`) is composed at upload from the standard `og` crop and is not rebuilt for the retouched
+    // variant (it needs the project title, town and brand at retouch time); the cover's OG keeps the enhanced look.
+    const retouchedKey = photo.chosenVariant === 'retouched' ? RETOUCHED_CROP_KEYS[rendition] : undefined;
+    const key = retouchedKey && stored[retouchedKey]?.objectId ? retouchedKey : rendition === 'og-branded' ? (stored.ogBranded?.objectId ? 'ogBranded' : 'og') : rendition;
     const entry = stored[key];
     if (!entry?.objectId) return null;
     return { objectId: entry.objectId, width: entry.w ?? null, height: entry.h ?? null, normalise: false };
