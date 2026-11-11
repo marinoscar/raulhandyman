@@ -177,6 +177,8 @@ export interface SiteStatus {
   lastBuildAt: string | null;
   lastBuildStatus: 'success' | 'failed' | 'running' | 'pending' | string | null;
   lastBuildError: string | null;
+  /** The last IndexNow ping (`GET /api/site/status`). */
+  lastPing?: { at: string | null; status: string | number | null; error: string | null; urlCount: number | null };
 }
 
 /** `POST .../publish` and `.../unpublish`: the project view plus the new content version (and the lint on publish). */
