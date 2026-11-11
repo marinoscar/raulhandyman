@@ -15,9 +15,14 @@
 import type { PlatformPermissionOptions } from '@marinoscar/platform-api/manifest';
 
 import { NOTES_PERMISSIONS } from '../notes/notes.permissions';
+import { PROJECTS_PERMISSIONS, PROJECTS_ROLES, PROJECT_ROLE_GRANTS } from '../projects/projects.permissions';
 import { enabledPermissionSlices } from './slices/manifest';
 
 export const PERMISSION_OPTIONS = {
   slices: ['identity', 'settings', 'jobs', 'nodes', 'user-data', ...enabledPermissionSlices()],
-  app: { permissions: [NOTES_PERMISSIONS] },
+  app: {
+    roles: [PROJECTS_ROLES],
+    permissions: [NOTES_PERMISSIONS, PROJECTS_PERMISSIONS],
+    grants: PROJECT_ROLE_GRANTS,
+  },
 } satisfies PlatformPermissionOptions;
