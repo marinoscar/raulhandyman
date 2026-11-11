@@ -4,6 +4,8 @@
 // Every page, the sitemap, and the structured data (JSON-LD) read from here.
 // =============================================================================
 
+import catalog from './catalog.json';
+
 export const business = {
   name: 'Raul Handyman',
   shortName: 'Raul',
@@ -23,16 +25,8 @@ export const business = {
 };
 
 // Towns listed on the site and in the structured data. `core: true` = highlighted.
-export const towns = [
-  { name: 'Conroe', core: true },
-  { name: 'The Woodlands', core: true },
-  { name: 'Montgomery', core: false },
-  { name: 'Willis', core: false },
-  { name: 'Spring', core: false },
-  { name: 'Magnolia', core: false },
-  { name: 'Shenandoah', core: false },
-  { name: 'Oak Ridge North', core: false },
-];
+// Identifiers live in catalog.json (shared with the admin app).
+export const towns: { name: string; slug: string; core: boolean }[] = catalog.towns;
 
 export type Service = {
   slug: string;
@@ -47,12 +41,12 @@ export type Service = {
   faq: { q: string; a: string }[];
 };
 
-export const services: Service[] = [
+// Long-form content per service. slug/tag/name/seoName come from catalog.json.
+type ServiceContent = Omit<Service, 'tag' | 'name' | 'seoName'>;
+
+const serviceContent: ServiceContent[] = [
   {
     slug: 'drywall-repair',
-    tag: 'Walls',
-    name: 'Drywall repair',
-    seoName: 'Drywall Repair',
     summary: 'Holes, cracks, water damage patches, and texture matching so the repair disappears.',
     intro:
       'A hole from a doorknob, a crack over a doorway, or a stain from an old leak makes a whole room look worn. Raul patches drywall so the repair blends into the wall once it is painted.',
@@ -81,9 +75,6 @@ export const services: Service[] = [
   },
   {
     slug: 'painting',
-    tag: 'Paint',
-    name: 'Interior & exterior painting',
-    seoName: 'Interior & Exterior Painting',
     summary: 'Rooms, trim, doors, cabinets, siding touch-ups and fences.',
     intro:
       'Fresh paint is the fastest way to make a room or the outside of a house look cared for. Raul handles single rooms, trim, doors and exterior touch-ups, with the prep work that makes paint last.',
@@ -112,9 +103,6 @@ export const services: Service[] = [
   },
   {
     slug: 'doors-and-trim',
-    tag: 'Carpentry',
-    name: 'Doors, trim & baseboards',
-    seoName: 'Door, Trim & Baseboard Repair',
     summary: 'Sticking doors, new hardware, door replacement, trim and baseboard install.',
     intro:
       'Doors that stick, rub, or will not latch are common in this area as houses settle and humidity changes. Raul adjusts, repairs and replaces doors, and installs trim and baseboards that finish a room.',
@@ -143,9 +131,6 @@ export const services: Service[] = [
   },
   {
     slug: 'fence-and-deck-repair',
-    tag: 'Outdoor',
-    name: 'Fence & deck repair',
-    seoName: 'Fence & Deck Repair',
     summary: 'Replace pickets and posts, fix gates, repair and refresh decks.',
     intro:
       'Wood fences and decks take a beating from sun, rain and storms. Raul replaces broken pickets and rotted posts, fixes gates that drag, and repairs decks so they are safe to use.',
@@ -174,9 +159,6 @@ export const services: Service[] = [
   },
   {
     slug: 'flooring-repair',
-    tag: 'Floors',
-    name: 'Flooring repairs',
-    seoName: 'Flooring Repair',
     summary: 'Loose or cracked tile, vinyl plank replacement, and transitions.',
     intro:
       'One cracked tile or a lifted plank can make a whole floor look worn. Raul replaces damaged pieces and fixes transitions between rooms without redoing the whole floor.',
@@ -200,9 +182,6 @@ export const services: Service[] = [
   },
   {
     slug: 'tv-mounting-and-shelving',
-    tag: 'Installs',
-    name: 'TV mounting & shelving',
-    seoName: 'TV Mounting & Shelving',
     summary: 'Wall mounts, floating shelves, curtain rods, mirrors and art hung level.',
     intro:
       'Heavy items need to go into the studs or the right anchors, at the right height, and level. Raul mounts TVs, shelves, mirrors and curtain rods so they stay put.',
@@ -226,9 +205,6 @@ export const services: Service[] = [
   },
   {
     slug: 'caulking-and-weatherproofing',
-    tag: 'Weather',
-    name: 'Caulking & weatherproofing',
-    seoName: 'Caulking & Weatherproofing',
     summary: 'Windows, doors, tubs and showers resealed to keep water and drafts out.',
     intro:
       'Cracked caulk lets water behind tubs and showers and lets hot, humid air in around windows and doors. Raul removes old caulk and reseals so it is clean and watertight.',
@@ -251,9 +227,6 @@ export const services: Service[] = [
   },
   {
     slug: 'assembly-and-small-repairs',
-    tag: 'Odd jobs',
-    name: 'Assembly & small repairs',
-    seoName: 'Furniture Assembly & Small Repairs',
     summary: 'Furniture, playsets, storage, and the to-do list you keep putting off.',
     intro:
       'Most homes have a list of small jobs that never get done. Save them up and Raul can work through the list in one visit.',
@@ -276,6 +249,20 @@ export const services: Service[] = [
     ],
   },
 ];
+
+const catalogBySlug = new Map(catalog.services.map((c) => [c.slug, c]));
+
+export const services: Service[] = serviceContent.map((c) => {
+  const meta = catalogBySlug.get(c.slug);
+  if (!meta) throw new Error(`Service "${c.slug}" has content in site.ts but no entry in catalog.json`);
+  return { ...meta, ...c };
+});
+
+for (const c of catalog.services) {
+  if (!serviceContent.some((s) => s.slug === c.slug)) {
+    throw new Error(`Service "${c.slug}" is in catalog.json but has no content in site.ts`);
+  }
+}
 
 export const homeFaq = [
   { q: 'How do I get a price?', a: `Call or text ${business.phoneDisplay}. A photo of the job by text is the fastest way to get a ballpark. For bigger jobs, Raul comes out to see it in person before giving a firm price.` },

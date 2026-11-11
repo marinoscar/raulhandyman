@@ -1,0 +1,130 @@
+name: Seam Request
+description: Ask the platform for an extension point instead of editing platform code
+title: "[Seam]: "
+labels: ["seam-request", "platform-packages", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form when an app needs an extension point the platform does not offer yet. File it instead of editing platform code in the app.
+        Work down the rungs first and say why each one fails: see "Extending a package (consumer guide)" and "The Extension Contract" in `docs/specs/platform-packages.md`.
+        This is not a bug report; use the Bug Report form for defects.
+
+  - type: dropdown
+    id: app
+    attributes:
+      label: App
+      description: The app that needs the seam.
+      options:
+        - EvoPath
+        - kvox
+        - MemoriaHub
+        - A new app
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: package
+    attributes:
+      label: Package
+      description: The package that should carry the seam.
+      options:
+        - platform-contract
+        - platform-api
+        - platform-web
+        - platform-db
+        - platform-cli
+        - platform-infra
+        - Not packaged yet (apps/* in this repository)
+    validations:
+      required: true
+
+  - type: input
+    id: slice
+    attributes:
+      label: Slice or module
+      description: The part of the platform the seam belongs to.
+      placeholder: e.g. telemetry, notifications, settings
+    validations:
+      required: true
+
+  - type: textarea
+    id: need
+    attributes:
+      label: Need
+      description: The app's need, in domain terms.
+      placeholder: What does the app have to do that the platform does not let it do today?
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: rungs_tried
+    attributes:
+      label: Rungs tried
+      description: Tick every rung of the extension ladder you tried.
+      options:
+        - label: 1 Options (`forRoot()`)
+        - label: 2 Registries
+        - label: 3 Injection tokens
+        - label: 4 Events and hooks
+        - label: 5 Composition
+
+  - type: textarea
+    id: why_rungs_fail
+    attributes:
+      label: Why the existing rungs fail
+      description: Why the existing rungs cannot express the need.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed_seam
+    attributes:
+      label: Proposed seam
+      description: Name, TypeScript signature, and an example call.
+      render: typescript
+    validations:
+      required: true
+
+  - type: dropdown
+    id: proposed_rung
+    attributes:
+      label: Proposed rung
+      description: Which kind of extension point the seam should be.
+      options:
+        - 1 Options
+        - 2 Registry
+        - 3 Injection token
+        - 4 Event or hook
+        - 5 Composition primitive
+    validations:
+      required: true
+
+  - type: dropdown
+    id: urgency
+    attributes:
+      label: Urgency
+      options:
+        - The app can wait for a platform release
+        - The app needs a temporary eject (rung 6) now
+    validations:
+      required: true
+
+  - type: input
+    id: eject_ticket
+    attributes:
+      label: Eject ticket
+      description: Link to the app's eject ticket, if any.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Before you submit
+      options:
+        - label: I checked the package README's extension-point catalog
+          required: true
+        - label: This is not a bug report
+          required: true
