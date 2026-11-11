@@ -3,6 +3,7 @@
 // forms those services make. It proves the services' LOGIC (versions, slugs,
 // ordering, publish) without a database; `projects.db.spec.ts` proves the same
 // flows against real PostgreSQL and row-level security.
+import { Prisma } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 
 type Row = Record<string, any>;
@@ -92,7 +93,6 @@ export class FakeOrgDb {
       count: async ({ where }: Row) => this.vp().filter((r) => matches(r, where)).length,
       create: async ({ data }: Row) => {
         if (this.projects.some((r) => r.orgId === data.orgId && r.slug === data.slug)) {
-          const { Prisma } = await import('@prisma/client');
           throw new Prisma.PrismaClientKnownRequestError('Unique constraint failed', { code: 'P2002', clientVersion: 'test' });
         }
         const now = this.stamp();

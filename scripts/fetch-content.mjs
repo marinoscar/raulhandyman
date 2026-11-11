@@ -3,6 +3,8 @@
 //   Mode A  CONTENT_API_URL + (CONTENT_API_TOKEN_FILE | CONTENT_API_TOKEN): GET /api/site/content,
 //           then download every rendition from /api/site/media/<path>.
 //   Mode B  otherwise: use fixtures/content (or CONTENT_FIXTURE_DIR). CI always uses this mode.
+//   CONTENT_MODE=production (set by the Dockerfile): NEVER use fixtures. Without an API it
+//           builds an empty portfolio; with CONTENT_API_URL but no token the build fails.
 //           FIXTURE_MULTIPLY=N repeats the fixture projects N times (pagination tests only).
 //
 // Writes (all git-ignored and regenerated): src/content/projects/<slug>.json,
@@ -29,6 +31,7 @@ const apiUrl = (process.env.CONTENT_API_URL || '').replace(/\/+$/, '');
 let token = process.env.CONTENT_API_TOKEN || '';
 if (process.env.CONTENT_API_TOKEN_FILE) token = (await readFile(process.env.CONTENT_API_TOKEN_FILE, 'utf8')).trim();
 const modeA = Boolean(apiUrl && token);
+const production = process.env.CONTENT_MODE === 'production';
 
 const redact = (s) => (token ? String(s).split(token).join('[redacted]') : String(s));
 const fail = (msg) => {
@@ -49,6 +52,13 @@ if (modeA) {
   } catch (e) {
     fail(`could not fetch content: ${e.message}`);
   }
+} else if (production) {
+  if (apiUrl) {
+    console.error('fetch-content: CONTENT_API_URL is set but no token was provided (CONTENT_API_TOKEN_FILE). Refusing to build.');
+    process.exit(1);
+  }
+  console.warn('fetch-content: production build with no CONTENT_API_URL: building an empty portfolio (no fixtures).');
+  manifest = { manifestVersion: 1, contentVersion: 'none', generatedAt: new Date().toISOString(), projects: [], redirects: [], indexNowKey: null };
 } else {
   fixtureDir = process.env.CONTENT_FIXTURE_DIR
     ? resolve(process.cwd(), process.env.CONTENT_FIXTURE_DIR)
