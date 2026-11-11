@@ -1,0 +1,34 @@
+// The sharing slice's sample record: a document a user writes INSIDE their
+// organization and can share with other members, groups and links. Unlike the
+// personal `Note`, it carries `org_id`: a shareable record belongs to an
+// organization, because its grants are row-level-security rows of that
+// organization. The migration enables and forces row-level security on the
+// table (the `<table>_org_isolation` policy), and the model is classified `org`
+// in `src/platform/sharing/documents/documents.ownership.ts` and registered in
+// the user-owned data registry with the same purge policy as the `onDelete`
+// below. The table stays in the schema when the sharing slice is off; its
+// routes are not mounted.
+model Document {
+  id          String   @id @default(uuid()) @db.Uuid
+  orgId       String   @map("org_id") @db.Uuid
+  ownerUserId String   @map("owner_user_id") @db.Uuid
+  title       String   @db.VarChar(200)
+  body        String   @default("")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  owner User         @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+
+  @@index([orgId, createdAt])
+  @@index([ownerUserId])
+  @@map("documents")
+}
+
+extend model User {
+  documents Document[]
+}
+
+extend model Organization {
+  documents Document[]
+}
