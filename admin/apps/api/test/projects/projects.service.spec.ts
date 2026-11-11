@@ -436,7 +436,7 @@ describe('SitePublishService', () => {
     expect(view.publishedAt).toBeInstanceOf(Date);
     expect(view.contentVersion).toMatch(/^[0-9a-f]{64}$/);
     expect(ctx.db.state).toEqual([expect.objectContaining({ orgId: ORG, contentVersion: view.contentVersion })]);
-    expect(ctx.events.publishPublished).toHaveBeenCalledWith({ orgId: ORG, projectId: project.id, slug: project.slug, actorUserId: USER });
+    expect(ctx.events.publishPublished).toHaveBeenCalledWith({ orgId: ORG, projectId: project.id, slug: project.slug, title: project.title, actorUserId: USER });
   });
 
   it('answers 412 for a stale version, 404 across organizations, 409 for an archived project', async () => {

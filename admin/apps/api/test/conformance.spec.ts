@@ -93,7 +93,17 @@ function sliceSuites() {
       ? { exports: { datamodel: Prisma.dmmf.datamodel, permissions: permissionRegistry.list() } }
       : {}),
     ...(isSliceEnabled('onboarding')
-      ? { onboarding: { permissions: permissionRegistry.list(), factSamples: { 'notes.noteCount': 0 }, minSteps: 3 } }
+      ? { onboarding: { permissions: permissionRegistry.list(), factSamples: {
+          'notes.noteCount': 0,
+          // The handyman site's facts read the database and services; the probe samples them.
+          'projects.storageConfigured': false,
+          'projects.aiCopyReady': { aiEnabled: false, copyModels: 0 },
+          'projects.pushConfigured': false,
+          'projects.buildToken': { count: 0, used: false },
+          'projects.publishedCount': 0,
+          'projects.backupScheduled': false,
+          'projects.ownProjectCount': 0,
+        }, minSteps: 3 } }
       : {}),
     ...(isSliceEnabled('android-app')
       ? { androidApp: { rawSqlIndexNames: RAW_SQL_INDEXES.map((index) => index.name) } }

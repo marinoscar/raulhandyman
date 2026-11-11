@@ -23,7 +23,7 @@ interface Harness {
   photo: Record<string, unknown>;
 }
 
-function build(opts: { cover?: boolean; photo?: Record<string, unknown>; settings?: Partial<ProjectsSettings>; original?: Buffer; readFails?: Error } = {}): Harness {
+function build(opts: { cover?: boolean; photo?: Record<string, unknown>; settings?: Partial<ProjectsSettings>; original?: Buffer; readFails?: Error; events?: unknown; metrics?: unknown } = {}): Harness {
   const photo = {
     id: PHOTO,
     projectId: PROJECT,
@@ -67,7 +67,7 @@ function build(opts: { cover?: boolean; photo?: Record<string, unknown>; setting
   const scope = { run: jest.fn(async (_job: unknown, fn: (tx: unknown) => Promise<unknown>) => fn(tx)) };
   const settings = { getNamespace: jest.fn(async () => ({ ...PROJECTS_SETTINGS_DEFAULTS, ...(opts.settings ?? {}) })) };
   const registry = { register: jest.fn() };
-  const handler = new PhotoProcessHandler(registry as never, scope as never, settings as never, store as never);
+  const handler = new PhotoProcessHandler(registry as never, scope as never, settings as never, store as never, opts.events as never, opts.metrics as never);
   return { handler, updates, writes, reads, store, photo };
 }
 
@@ -193,6 +193,48 @@ describe('projects.photo.process job', () => {
     await expect(h.handler.process(job(ALL))).resolves.toBeUndefined();
     expect(h.updates).toHaveLength(0);
   });
+});
+
+describe('projects.photo.process events and metrics', () => {
+  let original: Buffer;
+  beforeAll(async () => {
+    original = await sceneJpeg(1400, 1000, { cast: [0.85, 0.95, 1.08] });
+  });
+
+  it('announces the ready photo once to its uploader, after the last write, and records each stage', async () => {
+    const order: string[] = [];
+    const events = { publishPhotoReady: jest.fn(() => void order.push('event')) };
+    const metrics = { photoStage: jest.fn() };
+    const h = build({ original, photo: { createdById: 'user-up' }, events, metrics });
+    const origUpdate = h.updates.push.bind(h.updates);
+    h.updates.push = ((...items: Record<string, unknown>[]) => {
+      order.push(`update:${String(items[0]?.processingStatus ?? 'x')}`);
+      return origUpdate(...items);
+    }) as never;
+    await h.handler.process(job(ALL));
+    expect(events.publishPhotoReady).toHaveBeenCalledTimes(1);
+    expect(events.publishPhotoReady).toHaveBeenCalledWith({ orgId: ORG, projectId: PROJECT, photoId: PHOTO, uploaderId: 'user-up', status: 'ok' });
+    expect(order[order.length - 1]).toBe('event');
+    expect(order[order.length - 2]).toBe('update:ready');
+    const stages = metrics.photoStage.mock.calls.map((call: unknown[]) => [call[0], call[1]]);
+    expect(stages).toEqual([['enhance', 'ok'], ['crops', 'ok'], ['og', 'ok']]);
+    for (const call of metrics.photoStage.mock.calls) expect(call[2]).toEqual(expect.any(Number));
+  }, 60_000);
+
+  it('announces a failure only on the last attempt, records the failed stage, and a throwing publisher never fails the job', async () => {
+    const events = { publishPhotoReady: jest.fn() };
+    const metrics = { photoStage: jest.fn() };
+    const early = build({ original, readFails: new Error('Input buffer contains unsupported image format'), events, metrics });
+    await expect(early.handler.process(job(ALL, { attempts: 1 }))).rejects.toThrow();
+    expect(events.publishPhotoReady).not.toHaveBeenCalled();
+
+    const last = build({ original, readFails: new Error('Input buffer contains unsupported image format'), events });
+    await expect(last.handler.process(job(ALL, { attempts: 3 }))).rejects.toThrow(/unsupported/);
+    expect(events.publishPhotoReady).toHaveBeenCalledWith(expect.objectContaining({ status: 'failed', photoId: PHOTO }));
+
+    const throwing = build({ original, events: { publishPhotoReady: jest.fn(() => { throw new Error('boom'); }) } });
+    await expect(throwing.handler.process(job(['crops']))).resolves.toBeUndefined();
+  }, 60_000);
 });
 
 describe('helpers', () => {

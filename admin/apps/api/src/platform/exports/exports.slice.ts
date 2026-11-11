@@ -16,7 +16,11 @@ export const exportsSlice: ApiSlice = {
     const exports = require('@marinoscar/platform-api/exports') as typeof import('@marinoscar/platform-api/exports');
     const userData = require('@marinoscar/platform-api/user-data') as typeof import('@marinoscar/platform-api/user-data');
     const { APP_EXPORT_SOURCES } = require('./notes.export-source') as typeof import('./notes.export-source');
+    const { PROJECTS_EXPORT_SOURCE, PROJECTS_ZIP_WRITER } = require('./projects.export-source') as typeof import('./projects.export-source');
     for (const source of APP_EXPORT_SOURCES) exports.registerExportSource(source);
+    // The projects export: a source of its own (the platform's `org-data` leaves projects out) and the writer that adds the photo files.
+    exports.registerExportWriter(PROJECTS_ZIP_WRITER);
+    exports.registerExportSource(PROJECTS_EXPORT_SOURCE);
     // An organization is not offboarded without a recent export of its data.
     userData.registerOffboardingPrecondition(userData.RECENT_ORG_EXPORT_PRECONDITION);
   },

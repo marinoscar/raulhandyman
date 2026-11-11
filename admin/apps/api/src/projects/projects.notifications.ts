@@ -2,7 +2,10 @@
 // Project and site notifications (issue #39)
 // =============================================================================
 //
-// Six events, declared as data and registered by
+// Six events (the platform's key pattern is `<area>.<name>`, two snake_case
+// segments, so the issue's dotted names are spelled `projects.photo_ready`,
+// `projects.ai_ready`, `projects.retouch_ready`, `site.build_live` and
+// `site.build_failed`), declared as data and registered by
 // `src/platform/notifications/notification.manifest.ts`. Raised AFTER the
 // triggering write committed, outside any transaction, by the publishers in
 // `./events/` (the seams `ProjectEventsPublisher`, `AiEventsPublisher`,
@@ -23,12 +26,12 @@
 import type { BrowserNotificationTemplate, NotificationRegistration } from '@marinoscar/platform-api/notifications';
 
 export const PROJECT_NOTIFICATION_EVENTS = {
-  PHOTO_READY: 'projects.photo.ready',
-  AI_READY: 'projects.ai.ready',
-  RETOUCH_READY: 'projects.retouch.ready',
+  PHOTO_READY: 'projects.photo_ready',
+  AI_READY: 'projects.ai_ready',
+  RETOUCH_READY: 'projects.retouch_ready',
   PUBLISHED: 'projects.published',
-  BUILD_LIVE: 'site.build.live',
-  BUILD_FAILED: 'site.build.failed',
+  BUILD_LIVE: 'site.build_live',
+  BUILD_FAILED: 'site.build_failed',
 } as const;
 
 /** The email template of `site.build.failed`. */

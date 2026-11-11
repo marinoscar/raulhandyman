@@ -19,8 +19,9 @@ function build(opts: { script?: unknown; photos?: Array<Record<string, any>>; pr
   const { scope, writes } = fakeScope(project, photos);
   const store = { read: jest.fn(async () => JPEG) };
   const events = { publishSuggestReady: jest.fn() };
-  const handler = new SuggestJobHandler({ register: jest.fn() } as never, scope, h.ai, moduleRefOf(h), store as never, events as never);
-  return { h, handler, project, photos, writes, store, events };
+  const metrics = { aiSuggest: jest.fn() };
+  const handler = new SuggestJobHandler({ register: jest.fn() } as never, scope, h.ai, moduleRefOf(h), store as never, events as never, metrics as never);
+  return { h, handler, project, photos, writes, store, events, metrics };
 }
 const job = (extra: Record<string, unknown> = {}) =>
   ({ id: 'job-1', type: AI_SUGGEST_JOB, orgId: ORG, payload: { orgId: ORG, projectId: PROJECT, userId: USER, fields: ['project', 'photos'], ...extra } }) as never;
@@ -54,6 +55,8 @@ describe('projects.ai.suggest job', () => {
     }
     expect(t.project.title).toBe('');
     expect(t.events.publishSuggestReady).toHaveBeenCalledWith({ orgId: ORG, projectId: PROJECT, userId: USER, jobId: 'job-1' });
+    expect(t.metrics.aiSuggest).toHaveBeenCalledTimes(1);
+    expect(t.metrics.aiSuggest).toHaveBeenCalledWith('ok', expect.any(Number));
   });
 
   it('replaces each photo\'s privacyFlags with the model\'s flags in the same write as the suggestion', async () => {

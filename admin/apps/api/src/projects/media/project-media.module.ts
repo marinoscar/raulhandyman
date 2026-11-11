@@ -6,6 +6,7 @@ import { MediaPhotoProcessingPort } from './media-photo-processing.port';
 import { ImageValidationProcessor } from './image-validation.processor';
 import { PhotoProcessHandler } from './photo-process.job';
 import { PhotoProcessingService } from './photo-processing.service';
+import { ProjectsExportBridge } from '../projects-export.bridge';
 import { ProjectMediaStore } from './project-media.store';
 
 /**
@@ -17,7 +18,7 @@ import { ProjectMediaStore } from './project-media.store';
  */
 @Module({
   imports: [StorageProvidersModule, ObjectProcessingModule, ProjectsEventsModule],
-  providers: [ProjectMediaStore, ImageValidationProcessor, PhotoProcessHandler, PhotoProcessingService, MediaPhotoProcessingPort],
+  providers: [ProjectMediaStore, ImageValidationProcessor, PhotoProcessHandler, PhotoProcessingService, MediaPhotoProcessingPort, ProjectsExportBridge],
   exports: [PhotoProcessingService, MediaPhotoProcessingPort, ProjectMediaStore],
 })
 export class ProjectMediaModule {}

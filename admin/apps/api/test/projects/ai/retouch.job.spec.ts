@@ -58,8 +58,9 @@ async function build(opts: { role?: string; photo?: Record<string, any>; flipRol
   };
   const settings = { getNamespace: jest.fn(async () => PROJECTS_SETTINGS_DEFAULTS) };
   const events = { publishRetouchReady: jest.fn() };
-  const handler = new RetouchJobHandler({ register: jest.fn() } as never, scope, h.ai, moduleRefOf(h), store as never, settings as never, events as never);
-  return { h, handler, photo, writes, store, written, events, calls };
+  const metrics = { aiRetouch: jest.fn() };
+  const handler = new RetouchJobHandler({ register: jest.fn() } as never, scope, h.ai, moduleRefOf(h), store as never, settings as never, events as never, metrics as never);
+  return { h, handler, photo, writes, store, written, events, calls, metrics };
 }
 const job = (options?: Record<string, unknown>) =>
   ({ id: 'job-2', type: PHOTO_RETOUCH_JOB, orgId: ORG, payload: { orgId: ORG, projectId: PROJECT, photoId: PHOTO_1, userId: USER, ...(options ? { options } : {}) } }) as never;
@@ -85,6 +86,7 @@ describe('projects.photo.retouch job', () => {
     expect(Object.keys(data.renditions)).toEqual(expect.arrayContaining(Object.values(RETOUCHED_RENDITION_KEYS)));
     expect(t.written.map((file) => file.name).sort()).toEqual(['retouched-card4x3.jpg', 'retouched-hero16x9.jpg', 'retouched-og.jpg', 'retouched-thumb.webp', 'retouched.jpg']);
     expect(t.events.publishRetouchReady).toHaveBeenCalledWith({ orgId: ORG, projectId: PROJECT, userId: USER, photoId: PHOTO_1, jobId: 'job-2' });
+    expect(t.metrics.aiRetouch.mock.calls).toEqual([['ok']]);
   });
 
   it('sends the fixed prompt, a PNG at the model size and the feature id; no key or URL appears anywhere', async () => {
@@ -143,6 +145,7 @@ describe('projects.photo.retouch job', () => {
     const error = await t.handler.process(job()).catch((e: Error) => e);
     expect((error as Error).message).not.toMatch(/sk-live|provider said/);
     expect(t.writes.photos).toHaveLength(0);
+    expect(t.metrics.aiRetouch.mock.calls).toEqual([['failed']]);
   });
 
   it('fails clearly when the administrator enabled no image-editing model', async () => {

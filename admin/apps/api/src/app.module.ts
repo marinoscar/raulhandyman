@@ -8,6 +8,7 @@ import { RegistryFreezeService } from '@marinoscar/platform-api/core';
 
 import configuration from './config/configuration';
 import { NotesModule } from './notes/notes.module';
+import { ProjectsDoctorModule } from './projects/doctor/projects-doctor.module';
 import { ProjectsModule } from './projects/projects.module';
 import { PLATFORM_MODULES } from './platform/platform';
 import { isSliceEnabled } from './platform/slices/manifest';
@@ -38,6 +39,7 @@ const projectsAiModules = isSliceEnabled('ai')
     ProjectsModule,
     ...projectsAiModules,
     SiteModule,
+    ProjectsDoctorModule,
   ],
   providers: [
     { provide: APP_PIPE, useClass: ZodValidationPipe },

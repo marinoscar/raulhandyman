@@ -24,6 +24,7 @@ import {
 } from '@marinoscar/platform-api/onboarding';
 
 import { PrismaService } from '../../prisma/prisma.service';
+import { PROJECTS_ONBOARDING_FACT_DEFS, PROJECTS_ONBOARDING_STEPS, REPLACED_PLATFORM_STEP_IDS } from '../../projects/projects.onboarding';
 import type { EnabledSlices, SliceId } from '../slices/slice';
 
 /** The slice whose page a platform step links to; a step not listed is always kept. */
@@ -69,10 +70,24 @@ export const APP_ONBOARDING_STEPS: readonly OnboardingStepDef[] = [
 /** Registers the platform's facts and the steps that fit `enabled`, then the app's. */
 export function registerOnboardingManifest(enabled: EnabledSlices): void {
   registerOnboardingFact(...PLATFORM_ONBOARDING_FACTS);
+  // The platform's storage, AI, push and backup steps are replaced by the handyman site's (`projects.onboarding.ts`).
   registerOnboardingStep(...PLATFORM_ONBOARDING_STEPS.filter((step) => {
+    if (REPLACED_PLATFORM_STEP_IDS.includes(step.id)) return false;
     const owner = STEP_OWNER[step.id];
     return owner === undefined || enabled.has(owner);
   }));
   registerOnboardingFact(...APP_ONBOARDING_FACTS);
   registerOnboardingStep(...APP_ONBOARDING_STEPS);
+  // The site's steps, each only when the slice whose page it links to is mounted (the storage step also needs the storage slice's config service).
+  const SITE_STEP_OWNER: Readonly<Record<string, SliceId>> = {
+    'projects.storage': 'storage',
+    'projects.openai': 'ai',
+    'projects.push': 'notifications',
+    'projects.backup': 'db-backup',
+  };
+  registerOnboardingFact(...PROJECTS_ONBOARDING_FACT_DEFS);
+  registerOnboardingStep(...PROJECTS_ONBOARDING_STEPS.filter((step) => {
+    const owner = SITE_STEP_OWNER[step.id];
+    return owner === undefined || enabled.has(owner);
+  }));
 }
