@@ -4,7 +4,7 @@ import { useSyncExternalStore } from 'react';
 import { ProjectEditorPage } from '../../pages/ProjectEditorPage';
 import { PublishBar } from '../../projects/PublishBar';
 import { isRelevantEvent } from '../../projects/liveUpdates';
-import { catalog, calls, ID, photo, project, P1, renderWithHost, summary } from './fixtures';
+import { catalog, calls, ID, photo, project, P1, renderWithHost } from './fixtures';
 
 // A controllable notification centre: the real one needs the SSE connector. The hook under test
 // only reads `notifications`, `streamState` and `isLoading`.
@@ -130,4 +130,4 @@ describe('live updates from server events', () => {
   });
 });
 
-void summary;
+

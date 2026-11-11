@@ -1,3 +1,4 @@
+import PublicOutlinedIcon from '@mui/icons-material/PublicOutlined';
 import { doctorSettingsPage } from '@marinoscar/platform-web/doctor/ui';
 import { identityAdminSections } from '@marinoscar/platform-web/identity/ui';
 import { jobsAdminSections } from '@marinoscar/platform-web/jobs/ui';
@@ -14,7 +15,19 @@ import { sliceAdminCards } from '../slices/manifest';
  * `Operations`, and add their own groups (AI) before the Danger Zone.
  */
 const CORE_ADMIN_SECTIONS: SettingsSectionDef[] = [
-  { label: 'General', cards: [] },
+  {
+    label: 'General',
+    cards: [
+      {
+        title: 'Site publishing',
+        description: 'Website build status, the build token, the IndexNow key, and brand and photo look.',
+        Icon: PublicOutlinedIcon,
+        path: '/admin/settings/site-publishing',
+        // GET/POST/DELETE /api/site/indexnow/key (apps/api/src/site/site.controller.ts).
+        permission: 'projects:publish',
+      },
+    ],
+  },
   { label: 'Access', cards: [...identityAdminSections.access, ...identityAdminSections.organizations] },
   {
     label: 'Operations',

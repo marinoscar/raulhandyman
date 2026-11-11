@@ -35,7 +35,7 @@ Declared in `apps/api/src/projects/projects.permissions.ts`; the strings below a
 | `storage:read`, `storage:write` (platform) | uploads | per the platform's sets | granted to the role | no |
 
 - `content_editor` is the business owner's role. It holds none of the administration permissions (users, storage config, AI keys, backups, system settings).
-- `site_reader` is the **service role of the site build**. A personal access token cannot be narrowed to one permission: it authenticates as its owner with that owner's permissions, bound to one organization. So the build token is created by a dedicated service user who holds only `site_reader`. Never mint it from an administrator or editor account. Steps: [runbook](../docs/runbook-admin.md#6-create-the-build-token).
+- `site_reader` is the **service role of the site build**. A personal access token cannot be narrowed to one permission: it authenticates as its owner with that owner's permissions, bound to one organization. So the build token is created by a dedicated service user who holds only `site_reader`. Never mint it from an administrator or editor account. Steps: [runbook](../docs/runbook-admin.md#9-create-the-build-token).
 - The owner (`INITIAL_ADMIN_EMAIL`) is always allowed in and is the administrator.
 
 ## Slices used and why

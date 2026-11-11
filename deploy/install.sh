@@ -109,6 +109,11 @@ main() {
   log ""
   log "[4/${TOTAL_STEPS}] Building image and starting container..."
   cd "${APP_DIR}"
+  # Re-running the installer on a site that already has published projects must not wipe them:
+  # when a content token exists, build with the admin API URL (same as deploy.sh).
+  if [ -s "${APP_DIR}/.content-token" ]; then
+    export CONTENT_API_URL="${ADMIN_API_URL:-http://127.0.0.1:8340}"
+  fi
   docker compose build web
   docker compose up -d web
 

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { usePlatformHost } from '@marinoscar/platform-web/core';
 import { useSystemSettings } from '@marinoscar/platform-web/settings/headless';
 
@@ -65,5 +65,5 @@ export function useIndexNowKey() {
 export function useProjectsSettings() {
   const settings = useSystemSettings<{ version: number; projects?: ProjectsSettings }>();
   const save = useCallback((patch: ProjectsSettingsPatch) => settings.updateSettings({ projects: patch } as never), [settings]);
-  return useMemo(() => ({ ...settings, projects: settings.settings?.projects ?? null, save }), [settings, save]);
+  return { ...settings, projects: settings.settings?.projects ?? null, save };
 }

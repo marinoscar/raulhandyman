@@ -29,6 +29,7 @@ import { USER_SETTINGS_SECTIONS } from './config/userSettingsSections';
 import { NotesPage } from './pages/NotesPage';
 import { ProjectEditorPage } from './pages/ProjectEditorPage';
 import { ProjectsPage } from './pages/ProjectsPage';
+import { SitePublishingPage } from './pages/SitePublishingPage';
 import { AppPlatformHost } from './platformHost';
 import {
   beforeLogout,
@@ -166,6 +167,7 @@ export function AppRoutes() {
           <Route path="settings" element={<Hub sections={USER_SETTINGS_SECTIONS} hubKey="user-settings-hub" title="Settings" subtitle="Manage your account preferences." />} />
           <Route path="settings/tokens" element={<UserTokensPage />} />
           <Route path="admin/settings" element={<Hub sections={ADMIN_SECTIONS} hubKey="admin-settings-hub" title="Administration" subtitle="Users, background jobs and the health of this deployment." />} />
+          <Route path="admin/settings/site-publishing" element={<Gate permission="projects:publish"><SitePublishingPage /></Gate>} />
           <Route path="admin/settings/users" element={<Gate permission="users:read"><UsersPage /></Gate>} />
           <Route path="admin/settings/organization" element={<Gate permission="org_members:read"><OrganizationPage /></Gate>} />
           <Route
