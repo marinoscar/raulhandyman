@@ -13,6 +13,8 @@
 // The id is permanent once dashboards use it.
 import type { MetricGroupDef } from '@marinoscar/platform-api/telemetry';
 
+import { PROJECTS_METRIC_GROUP } from './projects.metric-group';
+
 declare module '@marinoscar/platform-api/telemetry' {
   interface MetricGroupIds {
     /** Sign-ins and token refreshes by outcome. */
@@ -60,4 +62,4 @@ export const ACTIVITY_METRIC_GROUP: MetricGroupDef = {
 };
 
 /** Your own groups: append here. */
-export const APP_METRIC_GROUPS: readonly MetricGroupDef[] = [ACTIVITY_METRIC_GROUP];
+export const APP_METRIC_GROUPS: readonly MetricGroupDef[] = [ACTIVITY_METRIC_GROUP, PROJECTS_METRIC_GROUP];

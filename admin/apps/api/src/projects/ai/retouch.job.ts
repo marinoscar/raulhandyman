@@ -1,13 +1,16 @@
-import { Injectable, Logger, type OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, Optional, type OnModuleInit } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import type { Prisma } from '@prisma/client';
 import sharp from 'sharp';
 import { z } from 'zod';
 import { AiService } from '@marinoscar/platform-api/ai';
 import { JobHandlerRegistry, JobScope, type Job, type JobHandler } from '@marinoscar/platform-api/jobs';
+import { Trace } from '@marinoscar/platform-api/otel-core';
 import { SystemSettingsService } from '@marinoscar/platform-api/settings';
 
 import { PROJECTS_RETOUCH_FEATURE_ID } from '../../platform/ai/projects-retouch.feature';
+import { ProjectsMetrics } from '../events/projects.metrics';
+import { setSpanAttributes } from '../events/span-attributes';
 import { makeCrops, type CropKey } from '../media/photo-crops';
 import { enhance } from '../media/photo-enhance';
 import { ProjectMediaStore } from '../media/project-media.store';
@@ -80,6 +83,7 @@ export class RetouchJobHandler implements JobHandler, OnModuleInit {
     private readonly store: ProjectMediaStore,
     private readonly settings: SystemSettingsService,
     private readonly events: AiEventsPublisher,
+    @Optional() private readonly metrics?: ProjectsMetrics,
   ) {}
 
   onModuleInit(): void {
@@ -106,20 +110,23 @@ export class RetouchJobHandler implements JobHandler, OnModuleInit {
     const model = await this.pickImageModel(userId, orgId);
     let edited: Buffer;
     try {
-      const result = await this.ai.forUser(userId, { orgId, feature: PROJECTS_RETOUCH_FEATURE_ID }).editImageInline({
-        provider: model.provider,
-        model: model.modelId,
-        prompt: buildRetouchPrompt(payload.options),
-        images: [{ data: source, mimeType: 'image/png', filename: 'photo.png' }],
-        size: canvas.size,
-        outputFormat: 'png',
-        n: 1,
-      });
+      const result = await this.callModel({ orgId, projectId, photoId }, () =>
+        this.ai.forUser(userId, { orgId, feature: PROJECTS_RETOUCH_FEATURE_ID }).editImageInline({
+          provider: model.provider,
+          model: model.modelId,
+          prompt: buildRetouchPrompt(payload.options),
+          images: [{ data: source, mimeType: 'image/png', filename: 'photo.png' }],
+          size: canvas.size,
+          outputFormat: 'png',
+          n: 1,
+        }),
+      );
       const image = result.images[0];
       if (!image) throw new SafeJobError('The AI returned no image. Try again.');
       edited = Buffer.from(image.data);
     } catch (error) {
       this.logger.error(`job ${job.id}: retouch call failed for photo ${photoId}: ${error instanceof Error ? error.name : 'error'}`);
+      this.metrics?.aiRetouch('failed');
       throw toSafeAiError(error);
     }
 
@@ -150,12 +157,20 @@ export class RetouchJobHandler implements JobHandler, OnModuleInit {
       await tx.projectPhoto.update({ where: { id: photoId }, data: { retouchedObjectId, aiRetouched: true, renditions: renditions as Prisma.InputJsonValue } });
     });
 
+    this.metrics?.aiRetouch('ok');
     this.logger.log(`job ${job.id}: photo ${photoId} retouched with ${model.modelId}`);
     try {
       await this.events.publishRetouchReady({ orgId, projectId, userId, photoId, jobId: job.id });
     } catch (error) {
       this.logger.warn(`job ${job.id}: the ready event failed: ${error instanceof Error ? error.message : String(error)}`);
     }
+  }
+
+  /** The AI call, as its own span (the platform also traces the provider call). Attributes: ids only. */
+  @Trace('projects.ai.retouch.call')
+  private callModel<T>(ids: { orgId: string; projectId: string; photoId: string }, fn: () => Promise<T>): Promise<T> {
+    setSpanAttributes(ids);
+    return fn();
   }
 
   private loadPhoto(job: Job, payload: RetouchPayload) {

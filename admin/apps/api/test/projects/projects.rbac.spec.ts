@@ -59,6 +59,7 @@ const ROUTES: Route[] = [
   { name: 'add photo', method: 'POST', url: `/projects/${ID}/photos`, permission: 'projects:write', body: { storageObjectId: OBJECT } },
   { name: 'reorder photos', method: 'POST', url: `/projects/${ID}/photos/reorder`, permission: 'projects:write', body: { photoIds: [PHOTO] } },
   { name: 'update photo', method: 'PATCH', url: `/projects/${ID}/photos/${PHOTO}`, permission: 'projects:write', body: { caption: 'Finished wall' } },
+  { name: 'reprocess photo', method: 'POST', url: `/projects/${ID}/photos/${PHOTO}/reprocess`, permission: 'projects:write' },
   { name: 'delete photo', method: 'DELETE', url: `/projects/${ID}/photos/${PHOTO}`, permission: 'projects:write' },
 ];
 
@@ -80,7 +81,7 @@ beforeAll(async () => {
     providers: [
       { provide: APP_PIPE, useClass: ZodValidationPipe },
       { provide: ProjectsService, useValue: { ...mock(['list', 'create', 'get', 'update', 'remove']), catalog: jest.fn().mockReturnValue({ version: 1 }) } },
-      { provide: PhotosService, useValue: mock(['add', 'update', 'remove', 'reorder']) },
+      { provide: PhotosService, useValue: mock(['add', 'update', 'remove', 'reorder', 'reprocess']) },
       { provide: SitePublishService, useValue: mock(['publish', 'unpublish']) },
     ],
   })

@@ -33,6 +33,7 @@ import {
 import { contributions } from '../slices/contributions';
 import { isSliceEnabled } from '../slices/manifest';
 import { IDENTITY_NOTIFICATIONS } from './identity.notifications';
+import { PROJECT_NOTIFICATIONS } from '../../projects/projects.notifications';
 import { NOTES_NOTIFICATIONS } from './notes-archived.notification';
 
 /** The app's own channels (a webhook, SMS). Empty: the platform's three cover the sample. */
@@ -49,3 +50,4 @@ registerNotifications(OPS_NOTIFICATIONS);
 registerNotifications(NODES_NOTIFICATIONS);
 registerNotifications(contributions().notifications);
 registerNotifications(NOTES_NOTIFICATIONS);
+registerNotifications(PROJECT_NOTIFICATIONS);

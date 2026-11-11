@@ -52,7 +52,7 @@ function sliceSuites() {
       ? { storage: { requiredPrefixIds: isSliceEnabled('db-backup') ? ['database-backups'] : [] } }
       : {}),
     ...(isSliceEnabled('email')
-      ? { email: { samples: { 'org-invitation': { recipientEmail: 'guest@example.test', orgName: 'Org Kappa', roleName: 'viewer' }, 'notes-archived': { count: 2 } } } }
+      ? { email: { samples: { 'org-invitation': { recipientEmail: 'guest@example.test', orgName: 'Org Kappa', roleName: 'viewer' }, 'notes-archived': { count: 2 }, 'site-build-failed': { contentVersion: 'a1b2c3d4e5f60718', error: 'Build step 3 failed', statusUrl: 'https://app.example.test/admin/settings/site-publishing' } } } }
       : {}),
     ...(isSliceEnabled('notifications') ? { notifications: { afterCommitAllowlist: [] } } : {}),
     ...(isSliceEnabled('sharing')

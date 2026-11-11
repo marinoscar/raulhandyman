@@ -1,8 +1,10 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, Optional } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import { Trace } from '@marinoscar/platform-api/otel-core';
 import { createHash } from 'node:crypto';
 
+import { ProjectsMetrics } from '../projects/events/projects.metrics';
+import { setSpanAttributes } from '../projects/events/span-attributes';
 import { PrismaService } from '../prisma/prisma.service';
 import { findTown } from '../projects/catalog';
 import { computeContentVersion } from '../projects/site-content-version';
@@ -107,6 +109,7 @@ export class SiteService {
     private readonly indexNow: IndexNowKeyService,
     private readonly events: SiteEventsPublisher,
     private readonly ping: SitePingPort,
+    @Optional() private readonly metrics?: ProjectsMetrics,
   ) {}
 
   /** The content version (the same value `SitePublishState.contentVersion` holds). */
@@ -134,6 +137,7 @@ export class SiteService {
    */
   @Trace('site.manifest.build')
   async buildManifest(orgId: string): Promise<SiteManifest> {
+    setSpanAttributes({ orgId });
     const { contentVersion, projects } = await this.prisma.runInOrg(orgId, async (tx) => ({
       contentVersion: await computeContentVersion(tx, orgId),
       projects: await tx.project.findMany({ where: { orgId, status: 'published' }, select: MANIFEST_SELECT, orderBy: [{ publishedAt: 'asc' }, { id: 'asc' }] }),
@@ -245,7 +249,9 @@ export class SiteService {
    * One rendition's bytes, only for a photo of a PUBLISHED project of the
    * organization (any other photo is a 404, never a hint that it exists).
    */
+  @Trace('site.media.get')
   async getMedia(orgId: string, photoId: string, rendition: SiteMediaRendition): Promise<MediaFile> {
+    setSpanAttributes({ orgId, photoId, rendition });
     const photo = await this.prisma.runInOrg(orgId, (tx) =>
       tx.projectPhoto.findFirst({
         where: { id: photoId, orgId, project: { status: 'published' } },
@@ -277,6 +283,7 @@ export class SiteService {
       return existing?.lastBuildVersion ?? null;
     });
     this.logger.log(`site.build-status version=${report.contentVersion} status=${report.status} durationMs=${report.durationMs}`);
+    this.metrics?.siteBuild(report.status, report.durationMs);
 
     const event = { orgId, contentVersion: report.contentVersion, durationMs: report.durationMs, ...(report.error ? { error: report.error } : {}) };
     const guard = async (name: string, fn: () => Promise<void> | void) => {

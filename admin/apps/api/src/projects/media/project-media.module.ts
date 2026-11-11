@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ObjectProcessingModule, StorageProvidersModule } from '@marinoscar/platform-api/storage';
 
+import { ProjectsEventsModule } from '../events/projects-events.module';
 import { MediaPhotoProcessingPort } from './media-photo-processing.port';
 import { ImageValidationProcessor } from './image-validation.processor';
 import { PhotoProcessHandler } from './photo-process.job';
@@ -15,7 +16,7 @@ import { ProjectMediaStore } from './project-media.store';
  * the projects module binds to its photo-processing port.
  */
 @Module({
-  imports: [StorageProvidersModule, ObjectProcessingModule],
+  imports: [StorageProvidersModule, ObjectProcessingModule, ProjectsEventsModule],
   providers: [ProjectMediaStore, ImageValidationProcessor, PhotoProcessHandler, PhotoProcessingService, MediaPhotoProcessingPort],
   exports: [PhotoProcessingService, MediaPhotoProcessingPort, ProjectMediaStore],
 })

@@ -298,8 +298,17 @@ export function useProjectEditor(id: string) {
   const retryPhoto = useCallback(
     async (photoId: string) => {
       try {
-        await client.retryPhoto(id, photoId);
-        resource.setData((prev) => (prev ? { ...prev, photos: prev.photos.map((photo) => (photo.id === photoId ? { ...photo, processingStatus: 'processing', processingError: null } : photo)) } : prev));
+        const updated = await client.retryPhoto(id, photoId);
+        resource.setData((prev) =>
+          prev
+            ? {
+                ...prev,
+                photos: prev.photos.map((photo) =>
+                  photo.id === photoId ? { ...photo, ...(updated ?? {}), processingStatus: updated?.processingStatus ?? 'pending', processingError: null } : photo,
+                ),
+              }
+            : prev,
+        );
       } catch (error) {
         setSaveError(describeError(error, 'Could not retry the photo').message);
       }

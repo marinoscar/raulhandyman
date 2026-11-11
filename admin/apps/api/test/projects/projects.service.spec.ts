@@ -491,3 +491,91 @@ describe('SitePublishService', () => {
     expect(contentVersion).not.toBe(published.contentVersion);
   });
 });
+
+describe('list extras, view fields and reprocess', () => {
+  let ctx: Ctx;
+  beforeEach(() => {
+    ctx = build();
+    ctx.storage.previewUrl.mockImplementation(async (objectId: string) => `https://signed.example.test/${objectId}`);
+  });
+
+  it('adds the cover thumbnail URL and the lint error count to every list item, null thumb without a cover', async () => {
+    const withCover = seedProject(ctx.db, { slug: 'with-cover-slug', title: 'With cover', updatedAt: new Date('2026-02-01') });
+    const thumbId = randomUUID();
+    const cover = seedPhoto(ctx.db, withCover.id, { renditions: { thumb: { objectId: thumbId, w: 10, h: 10 } } });
+    withCover.coverPhotoId = cover.id;
+    const broken = seedProject(ctx.db, { slug: 'broken-slug', title: '', seoTitle: '', body: 'short', updatedAt: new Date('2026-01-15') });
+    const { items } = await ctx.projects.list(ORG, USER, { page: 1, pageSize: 20 });
+    const a = items.find((item) => item.id === withCover.id)!;
+    const b = items.find((item) => item.id === broken.id)!;
+    expect(a.coverThumbUrl).toBe(`https://signed.example.test/${thumbId}`);
+    expect(b.coverThumbUrl).toBeNull();
+    expect(b.lintErrorCount).toBeGreaterThan(0);
+    expect(b.lintErrorCount).toBeGreaterThan(a.lintErrorCount);
+    expect(ctx.storage.previewUrl).toHaveBeenCalledTimes(1); // only the cover thumbs are signed, once each
+  });
+
+  it('answers an empty page without extra queries', async () => {
+    expect(await ctx.projects.list(ORG, USER, { page: 1, pageSize: 20 })).toMatchObject({ items: [], total: 0 });
+  });
+
+  it('puts aiSuggestion and the fixed preview keys on the project view', async () => {
+    const project = seedProject(ctx.db, { aiSuggestion: { model: 'm', createdAt: 'x', runId: 'r', promptVersion: 'v1', output: { slug: 'a-slug' } } });
+    const ids = { thumb: randomUUID(), card4x3: randomUUID(), hero16x9: randomUUID(), og: randomUUID(), ogBranded: randomUUID() };
+    const enhanced = randomUUID();
+    const retouched = randomUUID();
+    const full = seedPhoto(ctx.db, project.id, {
+      enhancedObjectId: enhanced,
+      retouchedObjectId: retouched,
+      aiRetouched: true,
+      aiSuggestion: { output: { altText: 'x' } },
+      privacyFlags: ['person'],
+      renditions: Object.fromEntries(Object.entries(ids).map(([k, v]) => [k, { objectId: v, w: 1, h: 1 }])),
+    });
+    const bare = seedPhoto(ctx.db, project.id, { sortOrder: 9, renditions: null });
+    const view = await ctx.projects.get(ORG, USER, project.id);
+    expect(view.aiSuggestion).toMatchObject({ promptVersion: 'v1' });
+    const first = view.photos.find((p) => p.id === full.id)!;
+    expect(Object.keys(first.previews).sort()).toEqual(['card4x3', 'enhanced', 'hero16x9', 'og', 'ogBranded', 'original', 'retouched', 'thumb']);
+    expect(first.previews.retouched).toBe(`https://signed.example.test/${retouched}`);
+    expect(first.previews.ogBranded).toBe(`https://signed.example.test/${ids.ogBranded}`);
+    expect(first).toMatchObject({ aiRetouched: true, privacyFlags: ['person'], aiSuggestion: { output: { altText: 'x' } }, processingStatus: 'ready', processingError: null });
+    const second = view.photos.find((p) => p.id === bare.id)!;
+    expect(second.aiSuggestion).toBeNull();
+    expect(second.previews).toMatchObject({ thumb: null, card4x3: null, enhanced: null, retouched: null });
+    expect(second.previews.original).not.toBeNull();
+    expect(second).toMatchObject({ chosenVariant: 'enhanced', focalX: 0.5, focalY: 0.5, qualityFlags: [] });
+  });
+
+  it('has a null aiSuggestion when none is stored', async () => {
+    const project = seedProject(ctx.db);
+    expect((await ctx.projects.get(ORG, USER, project.id)).aiSuggestion).toBeNull();
+  });
+
+  describe('reprocess', () => {
+    it('answers 409 while the photo is processing and enqueues nothing', async () => {
+      const project = seedProject(ctx.db);
+      const photo = seedPhoto(ctx.db, project.id, { processingStatus: 'processing' });
+      await expect(ctx.photos.reprocess(ORG, USER, project.id, photo.id)).rejects.toBeInstanceOf(ConflictException);
+      expect(ctx.processing.enqueue).not.toHaveBeenCalled();
+      expect(photo.processingStatus).toBe('processing');
+    });
+
+    it('resets a failed photo to pending, clears the error, enqueues every stage and returns the photo view', async () => {
+      const project = seedProject(ctx.db);
+      const photo = seedPhoto(ctx.db, project.id, { processingStatus: 'failed', processingError: 'boom' });
+      const view = await ctx.photos.reprocess(ORG, USER, project.id, photo.id);
+      expect(view).toMatchObject({ id: photo.id, processingStatus: 'pending', processingError: null });
+      expect(view.previews.original).not.toBeNull();
+      expect(ctx.processing.enqueue).toHaveBeenCalledWith({ orgId: ORG, projectId: project.id, photoId: photo.id, userId: USER }, ['analyze', 'enhance', 'crops']);
+    });
+
+    it('answers 404 for another project, photo or organization', async () => {
+      const project = seedProject(ctx.db);
+      const photo = seedPhoto(ctx.db, project.id);
+      await expect(ctx.photos.reprocess(ORG, USER, randomUUID(), photo.id)).rejects.toBeInstanceOf(NotFoundException);
+      await expect(ctx.photos.reprocess(ORG, USER, project.id, randomUUID())).rejects.toBeInstanceOf(NotFoundException);
+      await expect(ctx.photos.reprocess(OTHER_ORG, USER, project.id, photo.id)).rejects.toBeInstanceOf(NotFoundException);
+    });
+  });
+});

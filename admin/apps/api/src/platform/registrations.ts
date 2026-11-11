@@ -12,6 +12,9 @@ import {
 } from '@marinoscar/platform-api/manifest';
 
 import { DOCUMENT_MODEL_OWNERSHIP, DOCUMENT_USER_OWNED_MODELS } from '../documents/documents.ownership';
+import { registerPlatformHostAppMetrics } from '@marinoscar/platform-api/host';
+
+import { PROJECTS_APP_METRICS } from '../projects/events/projects.metrics';
 import { PROJECT_MODEL_OWNERSHIP, PROJECT_USER_OWNED_MODELS } from '../projects/projects.ownership';
 import { APP_MODEL_OWNERSHIP, APP_USER_OWNED_MODELS } from '../notes/notes.ownership';
 import { PERMISSION_OPTIONS } from './permissions';
@@ -19,3 +22,5 @@ import { PERMISSION_OPTIONS } from './permissions';
 registerPlatformPermissions(PERMISSION_OPTIONS);
 registerPlatformUserOwnedModels([...APP_USER_OWNED_MODELS, ...DOCUMENT_USER_OWNED_MODELS, ...PROJECT_USER_OWNED_MODELS]);
 registerPlatformModelOwnership([...APP_MODEL_OWNERSHIP, ...DOCUMENT_MODEL_OWNERSHIP, ...PROJECT_MODEL_OWNERSHIP]);
+// The metric names the projects feature records (before bootstrap: the registry freezes after).
+registerPlatformHostAppMetrics(PROJECTS_APP_METRICS);

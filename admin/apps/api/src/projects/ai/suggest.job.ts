@@ -1,12 +1,15 @@
-import { Injectable, Logger, type OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, Optional, type OnModuleInit } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import type { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { AiService, type AiInputItem } from '@marinoscar/platform-api/ai';
 import { JobHandlerRegistry, JobScope, type Job, type JobHandler } from '@marinoscar/platform-api/jobs';
+import { Trace } from '@marinoscar/platform-api/otel-core';
 
 import { PROJECTS_COPY_FEATURE_ID } from '../../platform/ai/projects-copy.feature';
 import { findService, findTown } from '../catalog';
+import { ProjectsMetrics } from '../events/projects.metrics';
+import { setSpanAttributes } from '../events/span-attributes';
 import { ProjectMediaStore } from '../media/project-media.store';
 import { AiEventsPublisher } from '../projects.ports';
 import { lintStored, SIBLING_SELECT } from '../projects.views';
@@ -78,6 +81,7 @@ export class SuggestJobHandler implements JobHandler, OnModuleInit {
     private readonly moduleRef: ModuleRef,
     private readonly store: ProjectMediaStore,
     private readonly events: AiEventsPublisher,
+    @Optional() private readonly metrics?: ProjectsMetrics,
   ) {}
 
   onModuleInit(): void {
@@ -142,6 +146,7 @@ export class SuggestJobHandler implements JobHandler, OnModuleInit {
 
     const schema = payload.regenerate ? narrowSchemaFor(payload.regenerate.field) : copySchemaFor(payload.fields);
     let response;
+    const aiStart = Date.now();
     try {
       const model = await pickUsableModel(
         this.moduleRef,
@@ -150,16 +155,20 @@ export class SuggestJobHandler implements JobHandler, OnModuleInit {
         (caps) => caps.capabilities.includes('responses') && caps.capabilities.includes('structured_output') && caps.inputModalities.includes('image'),
         'No AI model is enabled for project copy. Ask an administrator to enable one in Admin, AI, Models.',
       );
-      response = await this.ai.forUser(userId, { orgId, feature: PROJECTS_COPY_FEATURE_ID }).respondStructured({
-        provider: model.provider,
-        model: model.modelId,
-        instructions: buildCopySystemPrompt(),
-        input,
-        schema,
-        schemaName: 'ProjectCopy',
-        strict: true,
-      });
+      response = await this.callModel({ orgId, projectId }, () =>
+        this.ai.forUser(userId, { orgId, feature: PROJECTS_COPY_FEATURE_ID }).respondStructured({
+          provider: model.provider,
+          model: model.modelId,
+          instructions: buildCopySystemPrompt(),
+          input,
+          schema,
+          schemaName: 'ProjectCopy',
+          strict: true,
+        }),
+      );
+      this.metrics?.aiSuggest('ok', Date.now() - aiStart);
     } catch (error) {
+      this.metrics?.aiSuggest('failed', Date.now() - aiStart);
       this.logger.error(`job ${job.id}: AI call failed for project ${projectId}: ${error instanceof Error ? error.name : 'error'}`);
       throw toSafeAiError(error);
     }
@@ -209,7 +218,7 @@ export class SuggestJobHandler implements JobHandler, OnModuleInit {
           const { photoId, ...rest } = row;
           if (!currentPhotos.has(photoId)) continue;
           // The privacy flags are also kept on the photo row (replacing the set), where the editor reads them; same write as the suggestion.
-          const flags = Array.isArray(rest.privacyFlags) ? [...new Set(rest.privacyFlags.filter((flag): flag is string => typeof flag === 'string'))] : null;
+          const flags = Array.isArray(rest.privacyFlags) ? [...new Set((rest.privacyFlags as unknown[]).filter((flag): flag is string => typeof flag === 'string'))] : null;
           await tx.projectPhoto.update({ where: { id: photoId }, data: { aiSuggestion: asJson({ ...meta, output: rest }), ...(flags ? { privacyFlags: flags } : {}) } });
         }
       }
@@ -221,6 +230,13 @@ export class SuggestJobHandler implements JobHandler, OnModuleInit {
     } catch (error) {
       this.logger.warn(`job ${job.id}: the ready event failed: ${error instanceof Error ? error.message : String(error)}`);
     }
+  }
+
+  /** The AI call, as its own span (the platform also traces the provider call). Attributes: ids only, never the prompt or the output. */
+  @Trace('projects.ai.suggest.call')
+  private callModel<T>(ids: { orgId: string; projectId: string }, fn: () => Promise<T>): Promise<T> {
+    setSpanAttributes(ids);
+    return fn();
   }
 
   /** At most eight photos by `sortOrder`, narrowed by `photoIds` or the regenerate's photo. */

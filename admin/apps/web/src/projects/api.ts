@@ -54,7 +54,7 @@ export function createProjectsClient(api: PlatformApiClient) {
     updatePhoto: (id: string, photoId: string, patch: UpdatePhotoPatch) => api.patch<Photo>(`${base(id)}/photos/${encodeURIComponent(photoId)}`, patch),
     removePhoto: (id: string, photoId: string) => api.delete<void>(`${base(id)}/photos/${encodeURIComponent(photoId)}`),
     /** Re-runs processing of a failed photo. */
-    retryPhoto: (id: string, photoId: string) => api.post<{ jobId?: string }>(`${base(id)}/photos/${encodeURIComponent(photoId)}/reprocess`),
+    retryPhoto: (id: string, photoId: string) => api.post<Photo>(`${base(id)}/photos/${encodeURIComponent(photoId)}/reprocess`),
     retouch: (id: string, photoId: string, options: RetouchOptions) =>
       api.post<{ jobId: string }>(`${base(id)}/photos/${encodeURIComponent(photoId)}/retouch`, { options }),
 

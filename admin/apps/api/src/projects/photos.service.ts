@@ -2,11 +2,12 @@ import { BadRequestException, ConflictException, Injectable, Logger, NotFoundExc
 import { Prisma } from '@prisma/client';
 import { Trace } from '@marinoscar/platform-api/otel-core';
 
+import { setSpanAttributes } from './events/span-attributes';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProjectStorageGateway } from './project-storage.gateway';
 import { PhotoProcessingPort } from './projects.ports';
 import { normalizeFileSlug, type AddPhotoDto, type ReorderPhotosDto, type UpdatePhotoDto } from './projects.schemas';
-import { photoObjectIds, toPhotoView } from './projects.views';
+import { photoObjectIds, photoPreviews, toPhotoView } from './projects.views';
 import { SitePublishService } from './site-publish.service';
 
 /** Photos of a project: add, edit, delete, reorder. Same rules as `ProjectsService` (org scope, no private data in logs). */
@@ -24,6 +25,7 @@ export class PhotosService {
   /** The object must be the caller's, `ready` and an image. The row starts `pending`; the processing job is enqueued after the commit. */
   @Trace('projects.photos.add')
   async add(orgId: string, userId: string, projectId: string, input: AddPhotoDto) {
+    setSpanAttributes({ orgId, projectId });
     const object = await this.storage.describe(input.storageObjectId, userId, orgId);
     if (!object) throw new UnprocessableEntityException('The storage object does not exist or is not yours');
     if (object.status !== 'ready') throw new UnprocessableEntityException('The storage object is not ready yet');
@@ -59,11 +61,12 @@ export class PhotosService {
     );
     this.logger.log(`project.photo.add projectId=${projectId} photoId=${row.id} userId=${userId}`);
     await this.processing.enqueue({ orgId, projectId, photoId: row.id, userId }, ['analyze', 'enhance', 'crops']);
-    return toPhotoView(row);
+    return this.view(row, userId, orgId);
   }
 
   @Trace('projects.photos.update')
   async update(orgId: string, userId: string, projectId: string, photoId: string, patch: UpdatePhotoDto) {
+    setSpanAttributes({ orgId, projectId, photoId });
     const { row, focalChanged } = await this.prisma.runInOrg(
       orgId,
       async (tx) => {
@@ -95,12 +98,45 @@ export class PhotosService {
     );
     this.logger.log(`project.photo.update projectId=${projectId} photoId=${photoId} userId=${userId}`);
     if (focalChanged) await this.processing.enqueue({ orgId, projectId, photoId, userId }, ['crops']);
-    return toPhotoView(row);
+    return this.view(row, userId, orgId);
+  }
+
+  /** Retries a photo's processing: 409 while it runs; otherwise back to `pending` with the error cleared, and every stage is enqueued after the commit. */
+  @Trace('projects.photos.reprocess')
+  async reprocess(orgId: string, userId: string, projectId: string, photoId: string) {
+    setSpanAttributes({ orgId, projectId, photoId });
+    const row = await this.prisma.runInOrg(
+      orgId,
+      async (tx) => {
+        if (!(await tx.project.findFirst({ where: { id: projectId }, select: { id: true } }))) throw new NotFoundException('Project not found');
+        const photo = await tx.projectPhoto.findFirst({ where: { id: photoId, projectId } });
+        if (!photo) throw new NotFoundException('Photo not found');
+        if (photo.processingStatus === 'processing') throw new ConflictException('The photo is being processed');
+        const { count } = await tx.projectPhoto.updateMany({
+          where: { id: photoId, projectId, processingStatus: { not: 'processing' } },
+          data: { processingStatus: 'pending', processingError: null },
+        });
+        if (count === 0) throw new ConflictException('The photo is being processed');
+        const updated = await tx.projectPhoto.findFirst({ where: { id: photoId, projectId } });
+        if (!updated) throw new NotFoundException('Photo not found');
+        return updated;
+      },
+      { userId },
+    );
+    this.logger.log(`project.photo.reprocess projectId=${projectId} photoId=${photoId} userId=${userId}`);
+    await this.processing.enqueue({ orgId, projectId, photoId, userId }, ['analyze', 'enhance', 'crops']);
+    return this.view(row, userId, orgId);
+  }
+
+  /** A photo view with its signed previews. */
+  private async view(row: Prisma.ProjectPhotoGetPayload<object>, userId: string, orgId: string) {
+    return { ...toPhotoView(row), previews: await photoPreviews(row, (objectId) => this.storage.previewUrl(objectId, userId, orgId)) };
   }
 
   /** Deletes the row and, after the commit, its storage objects. */
   @Trace('projects.photos.remove')
   async remove(orgId: string, userId: string, projectId: string, photoId: string): Promise<void> {
+    setSpanAttributes({ orgId, projectId, photoId });
     const objectIds = await this.prisma.runInOrg(
       orgId,
       async (tx) => {
@@ -122,6 +158,7 @@ export class PhotosService {
   /** `photoIds` must be exactly the project's photos (no missing, extra or repeated id). */
   @Trace('projects.photos.reorder')
   async reorder(orgId: string, userId: string, projectId: string, input: ReorderPhotosDto) {
+    setSpanAttributes({ orgId, projectId });
     const rows = await this.prisma.runInOrg(
       orgId,
       async (tx) => {

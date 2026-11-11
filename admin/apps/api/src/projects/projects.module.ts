@@ -6,7 +6,8 @@ import { isSliceEnabled } from '../platform/slices/manifest';
 import { PhotosService } from './photos.service';
 import { ProjectStorageGateway } from './project-storage.gateway';
 import { ProjectsController } from './projects.controller';
-import { AiEventsPublisher, PhotoProcessingPort, ProjectEventsPublisher } from './projects.ports';
+import { ProjectsEventsModule } from './events/projects-events.module';
+import { PhotoProcessingPort } from './projects.ports';
 import { ProjectsService } from './projects.service';
 import { SitePublishService } from './site-publish.service';
 
@@ -20,14 +21,13 @@ const storageImports = isSliceEnabled('storage')
 
 /**
  * The handyman site's content: projects and their photos, the SEO lint and the
- * publish workflow. `ProjectEventsPublisher` (notifications, issue #39) and
- * `PhotoProcessingPort` (the photo job, issue #17) are the two seams later
- * issues fill; their defaults do nothing.
+ * publish workflow. The event seams are bound to the notifications slice by
+ * `ProjectsEventsModule` (issue #39); `PhotoProcessingPort` is the photo job.
  */
 @Module({
-  imports: [...storageImports, ProjectMediaModule],
+  imports: [...storageImports, ProjectMediaModule, ProjectsEventsModule],
   controllers: [ProjectsController],
-  providers: [ProjectsService, PhotosService, SitePublishService, ProjectStorageGateway, ProjectEventsPublisher, AiEventsPublisher, { provide: PhotoProcessingPort, useExisting: MediaPhotoProcessingPort }],
-  exports: [ProjectsService, SitePublishService, ProjectEventsPublisher, AiEventsPublisher, PhotoProcessingPort, ProjectStorageGateway],
+  providers: [ProjectsService, PhotosService, SitePublishService, ProjectStorageGateway, { provide: PhotoProcessingPort, useExisting: MediaPhotoProcessingPort }],
+  exports: [ProjectsService, SitePublishService, ProjectsEventsModule, PhotoProcessingPort, ProjectStorageGateway],
 })
 export class ProjectsModule {}

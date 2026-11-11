@@ -1,8 +1,10 @@
-import { ConflictException, Injectable, Logger, NotFoundException, PreconditionFailedException, UnprocessableEntityException } from '@nestjs/common';
+import { ConflictException, Injectable, Logger, Optional, NotFoundException, PreconditionFailedException, UnprocessableEntityException } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import { Trace } from '@marinoscar/platform-api/otel-core';
 
+import { setSpanAttributes } from './events/span-attributes';
 import { PrismaService } from '../prisma/prisma.service';
+import { ProjectsMetrics } from './events/projects.metrics';
 import { ProjectEventsPublisher } from './projects.ports';
 import { lintStored, SIBLING_SELECT, toProjectView } from './projects.views';
 import { computeContentVersion } from './site-content-version';
@@ -17,6 +19,7 @@ export class SitePublishService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly events: ProjectEventsPublisher,
+    @Optional() private readonly metrics?: ProjectsMetrics,
   ) {}
 
   /**
@@ -42,6 +45,7 @@ export class SitePublishService {
   /** Lints the project; any error is a 422 listing the codes; otherwise it goes live and the version is recomputed. */
   @Trace('projects.publish')
   async publish(orgId: string, userId: string, id: string, expectedVersion: number) {
+    setSpanAttributes({ orgId, projectId: id });
     const result = await this.prisma.runInOrg(
       orgId,
       async (tx) => {
@@ -68,14 +72,16 @@ export class SitePublishService {
       { userId },
     );
     this.logger.log(`project.publish projectId=${id} userId=${userId}`);
+    this.metrics?.published('publish');
     // After the commit and outside any transaction (the notifications rule).
-    await this.events.publishPublished({ orgId, projectId: id, slug: result.project.slug, actorUserId: userId });
+    await this.events.publishPublished({ orgId, projectId: id, slug: result.project.slug, title: result.project.title, actorUserId: userId });
     return { ...toProjectView(result.project), contentVersion: result.contentVersion, lint: result.lint };
   }
 
   /** Back to `draft`; the project leaves the manifest and the version is recomputed. */
   @Trace('projects.unpublish')
   async unpublish(orgId: string, userId: string, id: string, expectedVersion: number | undefined) {
+    setSpanAttributes({ orgId, projectId: id });
     const result = await this.prisma.runInOrg(
       orgId,
       async (tx) => {
@@ -93,6 +99,7 @@ export class SitePublishService {
       { userId },
     );
     this.logger.log(`project.unpublish projectId=${id} userId=${userId}`);
+    this.metrics?.published('unpublish');
     await this.events.publishUnpublished({ orgId, projectId: id, slug: result.project.slug, actorUserId: userId });
     return { ...toProjectView(result.project), contentVersion: result.contentVersion };
   }

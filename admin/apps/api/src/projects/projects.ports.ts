@@ -5,6 +5,8 @@ export interface ProjectEvent {
   orgId: string;
   projectId: string;
   slug: string;
+  /** The project's title (never `workNotes`), for the `projects.published` payload. */
+  title?: string;
   actorUserId: string;
 }
 
@@ -61,4 +63,24 @@ export interface AiReadyEvent {
 export class AiEventsPublisher {
   publishSuggestReady(_event: AiReadyEvent): Promise<void> | void {}
   publishRetouchReady(_event: AiReadyEvent): Promise<void> | void {}
+}
+
+/** A photo's processing finished (or finally failed), for the notification hook (issue #39). */
+export interface PhotoReadyEvent {
+  orgId: string;
+  projectId: string;
+  photoId: string;
+  /** The photo's uploader (`ProjectPhoto.createdById`); null when the uploader was removed. */
+  uploaderId: string | null;
+  status: 'ok' | 'failed';
+}
+
+/**
+ * The seam where `projects.photo.ready` is sent through the notifications
+ * slice. The default does nothing. `projects.photo.process` calls it after its
+ * last write committed, and a failure here never fails the job.
+ */
+@Injectable()
+export class PhotoEventsPublisher {
+  publishPhotoReady(_event: PhotoReadyEvent): Promise<void> | void {}
 }

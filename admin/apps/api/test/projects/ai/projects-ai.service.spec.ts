@@ -18,7 +18,7 @@ function build() {
   let count = 0;
   const jobs = { enqueue: jest.fn(async (input: any) => ({ id: `job-${++count}`, ...input })) };
   const prisma = Object.assign(db.prisma, { job: { findFirst: jest.fn().mockResolvedValue(null) } });
-  const storage = { deleteAll: jest.fn().mockResolvedValue(undefined) };
+  const storage = { previewUrl: jest.fn().mockResolvedValue(null), deleteAll: jest.fn().mockResolvedValue(undefined) };
   const site = new SitePublishService(db.prisma as never, { publishPublished: jest.fn(), publishUnpublished: jest.fn() } as never);
   const service = new ProjectsAiService(prisma as never, jobs as never, site, storage as never);
   return { db, jobs, prisma, storage, service };

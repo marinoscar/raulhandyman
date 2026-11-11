@@ -1,6 +1,7 @@
 import type { EmailTemplate, EmailTemplateEntry } from '@marinoscar/platform-api/email';
 
 import { notesArchivedEmail, type NotesArchivedEmailData } from './notes-archived.email';
+import { siteBuildFailedEmail, type SiteBuildFailedEmailData } from './site-build-failed.email';
 import { orgInvitationEmail, type OrgInvitationEmailData } from './org-invitation.email';
 
 // =============================================================================
@@ -19,6 +20,7 @@ declare module '@marinoscar/platform-api/email' {
   interface EmailTemplateDataMap {
     'org-invitation': OrgInvitationEmailData;
     'notes-archived': NotesArchivedEmailData;
+    'site-build-failed': SiteBuildFailedEmailData;
   }
 }
 
@@ -26,7 +28,8 @@ declare module '@marinoscar/platform-api/email' {
 export const EMAIL_SLICE_TEMPLATES: readonly EmailTemplateEntry[] = [
   { name: 'org-invitation', render: orgInvitationEmail as EmailTemplate<never>, registrant: 'identity' },
   { name: 'notes-archived', render: notesArchivedEmail as EmailTemplate<never>, registrant: 'notes' },
+  { name: 'site-build-failed', render: siteBuildFailedEmail as EmailTemplate<never>, registrant: 'projects' },
 ];
 
-export { notesArchivedEmail, orgInvitationEmail };
-export type { NotesArchivedEmailData, OrgInvitationEmailData };
+export { notesArchivedEmail, orgInvitationEmail, siteBuildFailedEmail };
+export type { NotesArchivedEmailData, OrgInvitationEmailData, SiteBuildFailedEmailData };

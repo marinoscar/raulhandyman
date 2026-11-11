@@ -1,10 +1,13 @@
-import { Injectable, Logger, type OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, Optional, type OnModuleInit } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { JobHandlerRegistry, JobScope, type Job, type JobHandler } from '@marinoscar/platform-api/jobs';
 import { Trace } from '@marinoscar/platform-api/otel-core';
 import { SystemSettingsService } from '@marinoscar/platform-api/settings';
 
+import { setSpanAttributes } from '../events/span-attributes';
+import { ProjectsMetrics, type PhotoMetricStage } from '../events/projects.metrics';
+import { PhotoEventsPublisher } from '../projects.ports';
 import { CROP_SPECS, findFocalPoint, makeCrop, makeCrops, type Focal, type Rendition } from './photo-crops';
 import { enhance, type EnhanceResult } from './photo-enhance';
 import { renderOgImage } from './photo-og';
@@ -49,6 +52,7 @@ export function townName(slug: string): string {
     .join(' ');
 }
 
+type SpanIds = { orgId: string; projectId: string; photoId: string };
 type PhotoRenditions = Record<string, { objectId: string; w: number; h: number }>;
 
 /**
@@ -78,6 +82,8 @@ export class PhotoProcessHandler implements JobHandler, OnModuleInit {
     private readonly scope: JobScope,
     private readonly settings: SystemSettingsService,
     private readonly store: ProjectMediaStore,
+    @Optional() private readonly events?: PhotoEventsPublisher,
+    @Optional() private readonly metrics?: ProjectsMetrics,
   ) {}
 
   onModuleInit(): void {
@@ -109,13 +115,14 @@ export class PhotoProcessHandler implements JobHandler, OnModuleInit {
       const { grade, brand, og } = await this.settings.getNamespace('projects');
       const ogEnabled = og.enabled;
       const base = { orgId, projectId, photoId, uploadedById: photo.createdById };
+      const ids = { orgId, projectId, photoId };
 
       // 1. enhance (or load the existing master for a crops/og-only run).
       let master: Buffer;
       const update: Prisma.ProjectPhotoUncheckedUpdateInput = {};
       if (stages.has('enhance') || !photo.enhancedObjectId) {
         const original = await this.store.read(photo.originalObjectId, orgId);
-        const enhanced = await this.runEnhance(original, grade);
+        const enhanced = await this.timed('enhance', () => this.runEnhance(original, grade, ids));
         const flags = await assessQuality({ original, enhanced: enhanced.buffer, enhancedLumaMean: enhanced.stats.lumaMean });
         const objectId = await this.store.write({ ...base, name: 'enhanced.jpg', buffer: enhanced.buffer, mimeType: 'image/jpeg' });
         master = enhanced.buffer;
@@ -135,7 +142,7 @@ export class PhotoProcessHandler implements JobHandler, OnModuleInit {
       if (runCrops) {
         const firstRun = photo.renditions == null && photo.focalX === DEFAULT_FOCAL && photo.focalY === DEFAULT_FOCAL;
         if (firstRun) focal = await findFocalPoint(master);
-        const crops = await makeCrops(master, focal);
+        const crops = await this.timed('crops', () => this.runCrops(master, focal, ids));
         for (const crop of crops) {
           const objectId = await this.store.write({ ...base, name: `${crop.key}.${crop.ext}`, buffer: crop.buffer, mimeType: crop.mimeType });
           renditions[crop.key] = { objectId, w: crop.width, h: crop.height };
@@ -146,34 +153,77 @@ export class PhotoProcessHandler implements JobHandler, OnModuleInit {
 
       // 3. branded OG, cover photo only.
       if (runOg) {
-        ogCrop ??= await makeCrop(master, focal, CROP_SPECS.find((spec) => spec.key === 'og')!);
-        const logo = brand.logoObjectId ? await this.store.read(brand.logoObjectId, orgId).catch(() => null) : null;
-        const branded = await renderOgImage({
-          crop: ogCrop.buffer,
-          title: photo.project.title || brand.businessName,
-          town: townName(photo.project.townSlug),
-          brand: { navy: brand.navy, gold: brand.gold, businessName: brand.businessName, logo },
-        });
+        const ogSource = ogCrop;
+        const branded = await this.timed('og', () => this.runOg(ids, async () => {
+          const crop = ogSource ?? (await makeCrop(master, focal, CROP_SPECS.find((spec) => spec.key === 'og')!));
+          const logo = brand.logoObjectId ? await this.store.read(brand.logoObjectId, orgId).catch(() => null) : null;
+          return renderOgImage({
+            crop: crop.buffer,
+            title: photo.project.title || brand.businessName,
+            town: townName(photo.project.townSlug),
+            brand: { navy: brand.navy, gold: brand.gold, businessName: brand.businessName, logo },
+          });
+        }));
         const objectId = await this.store.write({ ...base, name: 'og-branded.jpg', buffer: branded, mimeType: 'image/jpeg' });
         renditions.ogBranded = { objectId, w: 1200, h: 630 };
         update.renditions = renditions;
       }
 
       await this.update(job, photoId, { ...update, processingStatus: 'ready', processingError: null });
-      // TODO(#40): record `projects_photo_process_ms` here. TODO(#39): `notify('projects.photo.ready')` after this commit.
       this.logger.log(`job ${job.id}: photo ${photoId} processed (${[...stages].join(',')}) in ${Date.now() - started} ms`);
+      // After the last write committed; a failure here never fails the job.
+      await this.announce({ orgId, projectId, photoId, uploaderId: photo.createdById ?? null, status: 'ok' });
     } catch (error) {
       this.logger.error(`job ${job.id}: photo ${photoId} failed: ${error instanceof Error ? error.message : String(error)}`);
       await this.update(job, photoId, { processingStatus: 'failed', processingError: safeProcessingError(error) }).catch((inner: unknown) =>
         this.logger.warn(`job ${job.id}: could not record the failure: ${inner instanceof Error ? inner.message : String(inner)}`),
       );
+      // Only the last attempt tells the uploader: an earlier failure is retried.
+      if ((job.attempts ?? 1) >= this.profile.maxAttempts) {
+        await this.announce({ orgId, projectId, photoId, uploaderId: photo.createdById ?? null, status: 'failed' });
+      }
       throw error;
     }
   }
 
+  /** Times one stage into `projects_photo_process_ms` (result ok or failed), re-throwing a failure. */
+  private async timed<T>(stage: PhotoMetricStage, fn: () => Promise<T>): Promise<T> {
+    const start = Date.now();
+    try {
+      const out = await fn();
+      this.metrics?.photoStage(stage, 'ok', Date.now() - start);
+      return out;
+    } catch (error) {
+      this.metrics?.photoStage(stage, 'failed', Date.now() - start);
+      throw error;
+    }
+  }
+
+  private async announce(event: Parameters<PhotoEventsPublisher['publishPhotoReady']>[0]): Promise<void> {
+    try {
+      await this.events?.publishPhotoReady(event);
+    } catch (error) {
+      this.logger.warn(`the photo ready event failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
   @Trace('projects.photo.enhance')
-  private runEnhance(original: Buffer, grade: { warmth: number; saturation: number }): Promise<EnhanceResult> {
+  private runEnhance(original: Buffer, grade: { warmth: number; saturation: number }, ids: SpanIds): Promise<EnhanceResult> {
+    setSpanAttributes({ ...ids, rendition: 'master' });
     return enhance(original, grade);
+  }
+
+  @Trace('projects.photo.crops')
+  private runCrops(master: Buffer, focal: Focal, ids: SpanIds): Promise<Rendition[]> {
+    setSpanAttributes(ids);
+    return makeCrops(master, focal);
+  }
+
+  /** The branded OG composite of the cover photo. */
+  @Trace('projects.photo.og')
+  private runOg<T>(ids: SpanIds, fn: () => Promise<T>): Promise<T> {
+    setSpanAttributes({ ...ids, rendition: 'og-branded' });
+    return fn();
   }
 
   private update(job: Job, photoId: string, data: Prisma.ProjectPhotoUncheckedUpdateInput): Promise<unknown> {

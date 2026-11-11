@@ -2,12 +2,13 @@ import { ConflictException, HttpException, Injectable, Logger, NotFoundException
 import { Prisma } from '@prisma/client';
 import { Trace } from '@marinoscar/platform-api/otel-core';
 
+import { setSpanAttributes } from './events/span-attributes';
 import { PrismaService } from '../prisma/prisma.service';
 import { CATALOG, type Catalog } from './catalog';
 import { ProjectStorageGateway } from './project-storage.gateway';
 import { baseSlug, type CreateProjectDto, type ListProjectsQueryDto, type UpdateProjectDto } from './projects.schemas';
 import { SitePublishService } from './site-publish.service';
-import { lintStored, photoObjectIds, renditionObjectIds, SIBLING_SELECT, toPhotoView, toProjectView } from './projects.views';
+import { lintStored, photoObjectIds, photoPreviews, renditionObjectId, SIBLING_SELECT, toPhotoView, toProjectView } from './projects.views';
 
 const MAX_SLUG_ATTEMPTS = 50;
 
@@ -52,15 +53,32 @@ export class ProjectsService {
         ? { OR: [{ title: { contains: query.q, mode: 'insensitive' } }, { slug: { contains: query.q, mode: 'insensitive' } }, { summary: { contains: query.q, mode: 'insensitive' } }] }
         : {}),
     };
-    const { rows, total } = await this.prisma.runInOrg(
+    // Four queries per page whatever its size: the page, the count, every photo of the page's projects and the organization's projects (the lint's duplicate rules).
+    const { rows, total, photos, siblings } = await this.prisma.runInOrg(
       orgId,
-      async (tx) => ({
-        rows: await tx.project.findMany({ where, orderBy: [{ updatedAt: 'desc' }, { id: 'asc' }], skip: (query.page - 1) * query.pageSize, take: query.pageSize }),
-        total: await tx.project.count({ where }),
-      }),
+      async (tx) => {
+        const rows = await tx.project.findMany({ where, orderBy: [{ updatedAt: 'desc' }, { id: 'asc' }], skip: (query.page - 1) * query.pageSize, take: query.pageSize });
+        return {
+          rows,
+          total: await tx.project.count({ where }),
+          photos: rows.length ? await tx.projectPhoto.findMany({ where: { projectId: { in: rows.map((row) => row.id) } } }) : [],
+          siblings: rows.length ? await tx.project.findMany({ select: SIBLING_SELECT }) : [],
+        };
+      },
       { userId },
     );
-    return { items: rows.map(toProjectView), page: query.page, pageSize: query.pageSize, total, totalPages: Math.max(1, Math.ceil(total / query.pageSize)) };
+    const items = await Promise.all(
+      rows.map(async (row) => {
+        const own = photos.filter((photo) => photo.projectId === row.id);
+        const coverThumbId = renditionObjectId(own.find((photo) => photo.id === row.coverPhotoId)?.renditions, 'thumb');
+        return {
+          ...toProjectView(row),
+          coverThumbUrl: coverThumbId ? await this.storage.previewUrl(coverThumbId, userId, orgId) : null,
+          lintErrorCount: lintStored(row, own, siblings.filter((sibling) => sibling.id !== row.id)).errors.length,
+        };
+      }),
+    );
+    return { items, page: query.page, pageSize: query.pageSize, total, totalPages: Math.max(1, Math.ceil(total / query.pageSize)) };
   }
 
   @Trace('projects.create')
@@ -113,14 +131,14 @@ export class ProjectsService {
       },
       { userId },
     );
-    const photoViews = await Promise.all(
-      photos.map(async (photo) => ({ ...toPhotoView(photo), previews: await this.previewsOf(photo, userId, orgId) })),
-    );
-    return { ...toProjectView(project), photos: photoViews, lint: lintStored(project, photos, siblings) };
+    const sign = (objectId: string) => this.storage.previewUrl(objectId, userId, orgId);
+    const photoViews = await Promise.all(photos.map(async (photo) => ({ ...toPhotoView(photo), previews: await photoPreviews(photo, sign) })));
+    return { ...toProjectView(project), aiSuggestion: project.aiSuggestion ?? null, photos: photoViews, lint: lintStored(project, photos, siblings) };
   }
 
   @Trace('projects.update')
   async update(orgId: string, userId: string, id: string, patch: UpdateProjectDto, ifMatch: string | undefined) {
+    setSpanAttributes({ orgId, projectId: id });
     const expected = parseIfMatch(ifMatch);
     const row = await this.prisma.runInOrg(
       orgId,
@@ -171,6 +189,7 @@ export class ProjectsService {
   /** Only `draft` and `archived` projects; a published one must be unpublished first (409). Deletes the photos' storage objects. */
   @Trace('projects.remove')
   async remove(orgId: string, userId: string, id: string): Promise<void> {
+    setSpanAttributes({ orgId, projectId: id });
     const objectIds = await this.prisma.runInOrg(
       orgId,
       async (tx) => {
@@ -196,24 +215,5 @@ export class ProjectsService {
       if (!taken) return candidate;
     }
     throw new HttpException('Could not allocate a unique slug', 409);
-  }
-
-  private async previewsOf(photo: Prisma.ProjectPhotoGetPayload<object>, userId: string, orgId: string): Promise<Record<string, string | null>> {
-    const wanted: Record<string, string | null | undefined> = {
-      original: photo.originalObjectId,
-      enhanced: photo.enhancedObjectId,
-      retouched: photo.retouchedObjectId,
-    };
-    if (photo.renditions && typeof photo.renditions === 'object') {
-      for (const [name, entry] of Object.entries(photo.renditions as Record<string, unknown>)) {
-        wanted[name] = renditionObjectIds({ [name]: entry })[0];
-      }
-    }
-    const entries = await Promise.all(
-      Object.entries(wanted)
-        .filter((entry): entry is [string, string] => typeof entry[1] === 'string')
-        .map(async ([name, objectId]) => [name, await this.storage.previewUrl(objectId, userId, orgId)] as const),
-    );
-    return Object.fromEntries(entries);
   }
 }

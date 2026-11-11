@@ -3,11 +3,12 @@ import { Prisma } from '@prisma/client';
 import { buildDedupKey, JobReason, JobsService, JobStatus } from '@marinoscar/platform-api/jobs';
 import { Trace } from '@marinoscar/platform-api/otel-core';
 
+import { setSpanAttributes } from '../events/span-attributes';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ProjectStorageGateway } from '../project-storage.gateway';
 import { normalizeFileSlug } from '../projects.schemas';
 import { parseIfMatch } from '../projects.service';
-import { lintStored, renditionObjectIds, SIBLING_SELECT, toPhotoView, toProjectView } from '../projects.views';
+import { lintStored, photoPreviews, renditionObjectIds, SIBLING_SELECT, toPhotoView, toProjectView } from '../projects.views';
 import { SLUG_PATTERN } from '../seo-lint';
 import { SitePublishService } from '../site-publish.service';
 import { AI_SUGGEST_JOB, AI_SUGGEST_SUBJECT_TYPE, PHOTO_RETOUCH_JOB, PHOTO_RETOUCH_SUBJECT_TYPE } from './projects-ai.constants';
@@ -42,6 +43,7 @@ export class ProjectsAiService {
   /** `409` while a suggest job of this project is queued or running (the dedup key `projects.ai.suggest:<projectId>`). */
   @Trace('projects.ai.suggest.enqueue')
   async suggest(orgId: string, userId: string, projectId: string, body: { fields?: SuggestScope[]; photoIds?: string[] }): Promise<{ jobId: string }> {
+    setSpanAttributes({ orgId, projectId });
     await this.requireProject(orgId, userId, projectId);
     if (body.photoIds?.length) await this.requirePhotos(orgId, userId, projectId, body.photoIds);
     const payload: SuggestPayload = { orgId, projectId, userId, fields: body.fields ?? ['project', 'photos'], ...(body.photoIds ? { photoIds: body.photoIds } : {}) };
@@ -51,6 +53,7 @@ export class ProjectsAiService {
   /** Enqueues a narrow suggest run: only the key asked for is regenerated and merged. */
   @Trace('projects.ai.regenerate.enqueue')
   async regenerate(orgId: string, userId: string, projectId: string, body: RegenerateBody): Promise<{ jobId: string }> {
+    setSpanAttributes({ orgId, projectId });
     const { project, photos } = await this.requireProject(orgId, userId, projectId, true);
     const photoId = body.photoId;
     let current: string;
@@ -81,6 +84,7 @@ export class ProjectsAiService {
   /** 422 `RETOUCH_NOT_ALLOWED` for a `before` photo, 409 while the photo is not `ready`. */
   @Trace('projects.ai.retouch.enqueue')
   async retouch(orgId: string, userId: string, projectId: string, photoId: string, options: RetouchPayload['options']): Promise<{ jobId: string }> {
+    setSpanAttributes({ orgId, projectId, photoId });
     const photo = await this.prisma.runInOrg(
       orgId,
       async (tx) => {
@@ -107,6 +111,7 @@ export class ProjectsAiService {
    */
   @Trace('projects.ai.apply')
   async apply(orgId: string, userId: string, projectId: string, body: ApplyBody, ifMatch: string | undefined) {
+    setSpanAttributes({ orgId, projectId });
     const expected = parseIfMatch(ifMatch);
     const result = await this.prisma.runInOrg(
       orgId,
@@ -182,12 +187,15 @@ export class ProjectsAiService {
       throw error;
     });
     this.logger.log(`project.ai.apply projectId=${projectId} userId=${userId}`);
-    return { ...toProjectView(result.project), photos: result.photos.map(toPhotoView), lint: result.lint };
+    const sign = (objectId: string) => this.storage.previewUrl(objectId, userId, orgId);
+    const photos = await Promise.all(result.photos.map(async (photo) => ({ ...toPhotoView(photo), previews: await photoPreviews(photo, sign) })));
+    return { ...toProjectView(result.project), aiSuggestion: result.project.aiSuggestion ?? null, photos, lint: result.lint };
   }
 
   /** Removes the retouched variant and its objects; a photo that was set to `retouched` falls back to `enhanced`. */
   @Trace('projects.ai.retouch.remove')
   async removeRetouch(orgId: string, userId: string, projectId: string, photoId: string) {
+    setSpanAttributes({ orgId, projectId, photoId });
     const { row, objectIds } = await this.prisma.runInOrg(
       orgId,
       async (tx) => {
@@ -215,7 +223,7 @@ export class ProjectsAiService {
     );
     this.logger.log(`project.photo.retouch.remove projectId=${projectId} photoId=${photoId} userId=${userId}`);
     await this.storage.deleteAll(objectIds, userId, orgId);
-    return toPhotoView(row);
+    return { ...toPhotoView(row), previews: await photoPreviews(row, (objectId) => this.storage.previewUrl(objectId, userId, orgId)) };
   }
 
   private async enqueueSuggest(projectId: string, orgId: string, payload: SuggestPayload): Promise<{ jobId: string }> {

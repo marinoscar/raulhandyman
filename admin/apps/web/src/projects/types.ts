@@ -30,8 +30,9 @@ export interface AiSuggestionEnvelope<T> {
   model?: string;
   createdAt?: string;
   runId?: string;
+  promptVersion?: string;
   output: T;
-  lintWarnings?: string[];
+  lintWarnings?: { code: string; field: string; message: string; photoId?: string }[];
 }
 
 export interface PhotoCopyOutput {

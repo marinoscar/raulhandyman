@@ -25,7 +25,7 @@ export class ProjectsController {
 
   @Get()
   @Auth({ permissions: ['projects:read'] })
-  @ApiOperation({ summary: 'List projects (paginated; filter by status, service and text)' })
+  @ApiOperation({ summary: 'List projects (paginated; filter by status, service and text), each with a signed cover thumbnail URL and its SEO error count' })
   list(@CurrentUser('id') userId: string, @CurrentOrg() orgId: string, @Query() query: ListProjectsQueryDto) {
     return this.projects.list(orgId, userId, query);
   }
@@ -130,6 +130,20 @@ export class ProjectsController {
     @Body() body: UpdatePhotoDto,
   ) {
     return this.photos.update(orgId, userId, id, photoId, body);
+  }
+
+  @Post(':id/photos/:photoId/reprocess')
+  @HttpCode(200)
+  @Auth({ permissions: ['projects:write'] })
+  @ApiOperation({ summary: 'Retry the processing of a photo (back to pending, error cleared, every stage enqueued; 409 while it is processing)' })
+  @ApiOkResponse({ description: 'The updated photo with its signed previews' })
+  reprocessPhoto(
+    @CurrentUser('id') userId: string,
+    @CurrentOrg() orgId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('photoId', ParseUUIDPipe) photoId: string,
+  ) {
+    return this.photos.reprocess(orgId, userId, id, photoId);
   }
 
   @Delete(':id/photos/:photoId')

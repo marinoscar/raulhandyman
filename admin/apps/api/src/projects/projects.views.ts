@@ -60,9 +60,43 @@ export function toPhotoView(row: PhotoRow) {
     processingStatus: row.processingStatus,
     processingError: row.processingError,
     aiRetouched: row.aiRetouched,
+    aiSuggestion: row.aiSuggestion ?? null,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
+}
+
+/** The rendition names the editor previews, in the order the web lists them. */
+export const PREVIEW_RENDITIONS = ['thumb', 'card4x3', 'hero16x9', 'og', 'ogBranded'] as const;
+export const PREVIEW_KEYS = [...PREVIEW_RENDITIONS, 'original', 'enhanced', 'retouched'] as const;
+export type PhotoPreviews = Record<(typeof PREVIEW_KEYS)[number], string | null>;
+
+/** The storage object id of one rendition inside `renditions` (`{ thumb: { objectId, w, h } }`), or `null`. */
+export function renditionObjectId(renditions: unknown, name: string): string | null {
+  if (!renditions || typeof renditions !== 'object') return null;
+  const entry = (renditions as Record<string, unknown>)[name];
+  const id = typeof entry === 'string' ? entry : (entry as { objectId?: unknown } | null | undefined)?.objectId;
+  return typeof id === 'string' && id.length > 0 ? id : null;
+}
+
+/**
+ * The signed preview URL of every rendition a photo can show (`null` when that
+ * rendition or object does not exist or cannot be signed). `sign` is the
+ * storage gateway's `previewUrl`; URLs are short-lived and never logged.
+ */
+export async function photoPreviews(photo: PhotoRow, sign: (objectId: string) => Promise<string | null>): Promise<PhotoPreviews> {
+  const ids: Record<(typeof PREVIEW_KEYS)[number], string | null> = {
+    thumb: renditionObjectId(photo.renditions, 'thumb'),
+    card4x3: renditionObjectId(photo.renditions, 'card4x3'),
+    hero16x9: renditionObjectId(photo.renditions, 'hero16x9'),
+    og: renditionObjectId(photo.renditions, 'og'),
+    ogBranded: renditionObjectId(photo.renditions, 'ogBranded'),
+    original: photo.originalObjectId || null,
+    enhanced: photo.enhancedObjectId,
+    retouched: photo.retouchedObjectId,
+  };
+  const entries = await Promise.all(PREVIEW_KEYS.map(async (key) => [key, ids[key] ? await sign(ids[key]) : null] as const));
+  return Object.fromEntries(entries) as PhotoPreviews;
 }
 
 /** Runs the shared SEO lint on a stored project (the same function the web editor runs). */
