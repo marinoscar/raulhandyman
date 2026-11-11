@@ -14,11 +14,22 @@ interface Props {
   description: string;
   schema?: object[];
   noindex?: boolean;
+  ogImage?: { src: string; width: number; height: number; alt: string };
+  ogType?: 'website' | 'article';
+  publishedTime?: Date | string;
+  modifiedTime?: Date | string;
+  /** LCP image to preload (set by pages that know their hero). */
+  preloadImage?: { href: string; srcset?: string; sizes?: string; type?: string };
+  /** rel=prev / rel=next hrefs for paginated lists. */
+  prev?: string;
+  next?: string;
 }
 
-const { title, description, schema = [], noindex = false } = Astro.props;
+const { title, description, schema = [], noindex = false, ogType = 'website', publishedTime, modifiedTime, preloadImage, prev, next } = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site).href;
-const ogImage = new URL('/og.jpg', Astro.site).href;
+const og = Astro.props.ogImage ?? { src: '/og.jpg', width: 1200, height: 630, alt: `${business.name}: handyman in ${business.baseCity}, ${business.region}` };
+const ogImage = new URL(og.src, Astro.site).href;
+const iso = (d?: Date | string) => (d ? new Date(d).toISOString() : undefined);
 ---
 
 <!doctype html>
@@ -40,17 +51,25 @@ const ogImage = new URL('/og.jpg', Astro.site).href;
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="sitemap" href="/sitemap-index.xml" />
+    {prev && <link rel="prev" href={new URL(prev, Astro.site).href} />}
+    {next && <link rel="next" href={new URL(next, Astro.site).href} />}
+    {preloadImage && <link rel="preload" as="image" href={preloadImage.href} imagesrcset={preloadImage.srcset} imagesizes={preloadImage.sizes} type={preloadImage.type} fetchpriority="high" />}
 
-    <meta property="og:type" content="website" />
+    <meta property="og:type" content={ogType} />
+    {ogType === 'article' && publishedTime && <meta property="article:published_time" content={iso(publishedTime)} />}
+    {ogType === 'article' && modifiedTime && <meta property="article:modified_time" content={iso(modifiedTime)} />}
     <meta property="og:site_name" content={business.name} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
     <meta property="og:image" content={ogImage} />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
+    <meta property="og:image:width" content={String(og.width)} />
+    <meta property="og:image:height" content={String(og.height)} />
+    <meta property="og:image:alt" content={og.alt} />
     <meta property="og:locale" content="en_US" />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content={ogImage} />
+    <meta name="twitter:image:alt" content={og.alt} />
 
     {schema.map((s) => <script type="application/ld+json" set:html={JSON.stringify(s)} />)}
   </head>

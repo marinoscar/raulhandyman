@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raulhandyman.net/schemas/site-manifest-v1.json",
+  "title": "Site content manifest v1",
+  "description": "Published content contract between the admin API (GET /api/site/content) and the static site. Frozen: any change bumps manifestVersion and updates both sides.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["manifestVersion", "contentVersion", "generatedAt", "projects", "redirects"],
+  "properties": {
+    "manifestVersion": { "const": 1 },
+    "contentVersion": { "type": "string", "minLength": 1 },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "indexNowKey": { "type": ["string", "null"], "pattern": "^[A-Za-z0-9-]{8,128}$" },
+    "projects": { "type": "array", "items": { "$ref": "#/$defs/project" } },
+    "redirects": { "type": "array", "items": { "$ref": "#/$defs/redirect" } }
+  },
+  "$defs": {
+    "uuid": { "type": "string", "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$" },
+    "slug": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$", "maxLength": 120 },
+    "mediaPath": { "type": "string", "pattern": "^media/[A-Za-z0-9._/-]+\\.(jpg|jpeg|png|webp|avif)$" },
+    "redirect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["from", "to"],
+      "properties": {
+        "from": { "type": "string", "pattern": "^/projects/[a-z0-9-]+/$" },
+        "to": { "type": "string", "pattern": "^/projects/[a-z0-9-]+/$" }
+      }
+    },
+    "rendition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "width", "height", "sha256"],
+      "properties": {
+        "path": { "$ref": "#/$defs/mediaPath" },
+        "width": { "type": "integer", "minimum": 1 },
+        "height": { "type": "integer", "minimum": 1 },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
+    "photo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "role", "sortOrder", "altText", "fileSlug", "width", "height", "renditions"],
+      "properties": {
+        "id": { "$ref": "#/$defs/uuid" },
+        "role": { "enum": ["before", "after", "progress", "detail"] },
+        "sortOrder": { "type": "integer", "minimum": 0 },
+        "altText": { "type": "string", "minLength": 1, "maxLength": 300 },
+        "caption": { "type": ["string", "null"], "maxLength": 500 },
+        "fileSlug": { "$ref": "#/$defs/slug" },
+        "width": { "type": "integer", "minimum": 1 },
+        "height": { "type": "integer", "minimum": 1 },
+        "dominantColor": { "type": ["string", "null"], "pattern": "^#[0-9a-fA-F]{6}$" },
+        "focal": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "required": ["x", "y"],
+          "properties": {
+            "x": { "type": "number", "minimum": 0, "maximum": 1 },
+            "y": { "type": "number", "minimum": 0, "maximum": 1 }
+          }
+        },
+        "renditions": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["master", "card4x3", "hero16x9"],
+          "properties": {
+            "master": { "$ref": "#/$defs/rendition" },
+            "card4x3": { "$ref": "#/$defs/rendition" },
+            "hero16x9": { "$ref": "#/$defs/rendition" }
+          }
+        }
+      }
+    },
+    "project": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id", "slug", "title", "seoTitle", "metaDescription", "summary", "bodyMarkdown",
+        "serviceSlug", "townSlug", "townName", "completedOn", "publishedAt", "updatedAt",
+        "featured", "cover", "ogImage", "photos"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/uuid" },
+        "slug": { "$ref": "#/$defs/slug" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "seoTitle": { "type": ["string", "null"], "maxLength": 70 },
+        "metaDescription": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "summary": { "type": "string", "minLength": 1, "maxLength": 300 },
+        "bodyMarkdown": { "type": "string" },
+        "serviceSlug": { "$ref": "#/$defs/slug" },
+        "townSlug": { "$ref": "#/$defs/slug" },
+        "townName": { "type": "string", "minLength": 1 },
+        "completedOn": { "type": ["string", "null"], "format": "date" },
+        "publishedAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "featured": { "type": "boolean" },
+        "cover": { "$ref": "#/$defs/uuid" },
+        "ogImage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["path", "width", "height"],
+          "properties": {
+            "path": { "$ref": "#/$defs/mediaPath" },
+            "width": { "type": "integer", "minimum": 1 },
+            "height": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "photos": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/photo" } }
+      }
+    }
+  }
+}

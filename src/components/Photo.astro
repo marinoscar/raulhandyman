@@ -1,0 +1,31 @@
+---
+// The one place project photos become <img>/<picture>. Delivery (formats, widths, priority) is tuned here.
+import { Picture } from 'astro:assets';
+import type { ProjectPhoto } from '../data/projects';
+
+interface Props {
+  photo: ProjectPhoto;
+  rendition?: 'master' | 'card4x3' | 'hero16x9';
+  widths?: number[];
+  sizes?: string;
+  loading?: 'lazy' | 'eager';
+  fetchpriority?: 'high' | 'low' | 'auto';
+  alt?: string;
+  class?: string;
+}
+const { photo, rendition = 'card4x3', widths = [400, 800], sizes = '100vw', loading = 'lazy', fetchpriority, alt = photo.altText, class: cls } = Astro.props;
+const src = photo.renditions[rendition];
+---
+<Picture
+  src={src}
+  alt={alt}
+  widths={widths}
+  sizes={sizes}
+  formats={['avif', 'webp']}
+  fallbackFormat="jpg"
+  loading={loading}
+  fetchpriority={fetchpriority}
+  decoding={loading === 'eager' ? 'sync' : 'async'}
+  class={cls}
+  style={photo.dominantColor ? `background:${photo.dominantColor}` : undefined}
+/>

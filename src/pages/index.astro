@@ -5,6 +5,8 @@ import ServiceGrid from '../components/ServiceGrid.astro';
 import Faq from '../components/Faq.astro';
 import CtaBand from '../components/CtaBand.astro';
 import { business, towns, homeFaq } from '../data/site';
+import ProjectStrip from '../components/ProjectStrip.astro';
+import { getProjects, pickRecent } from '../data/projects';
 import { businessSchema, websiteSchema } from '../data/schema';
 import raul from '../assets/raul.jpg';
 
@@ -19,12 +21,15 @@ const work = Object.entries(workFiles)
     return { src: mod.default, alt: `${label.charAt(0).toUpperCase()}${label.slice(1)} by ${business.name}` };
   });
 
+const projects = await getProjects();
+const recent = pickRecent(projects, 6);
+
 const photoForSchema = await getImage({ src: raul, width: 800, format: 'jpg' });
 const photoUrl = new URL(photoForSchema.src, Astro.site).href;
 
 const title = 'Handyman in Conroe & The Woodlands, TX | Raul Handyman';
 const description = `Handyman in Conroe & The Woodlands, TX: drywall, painting, doors, fences, decks and repairs. ${business.yearsExperience} years, insured. Call or text ${business.phoneDisplay}.`;
-const schema = [businessSchema(photoUrl), websiteSchema()];
+const schema = [businessSchema(photoUrl, projects), websiteSchema()];
 ---
 
 <Base title={title} description={description} schema={schema}>
@@ -94,7 +99,9 @@ const schema = [businessSchema(photoUrl), websiteSchema()];
     </div>
   </section>
 
-  {work.length > 0 && (
+  <ProjectStrip heading="Recent projects" projects={recent} id="recent-projects" />
+
+  {projects.length === 0 && work.length > 0 && (
     <section class="block band" id="work" aria-labelledby="work-h">
       <div class="wrap">
         <div class="head"><span class="eyebrow">Recent work</span><h2 id="work-h">Recent jobs</h2></div>

@@ -1,0 +1,169 @@
+---
+import { getImage } from 'astro:assets';
+import Base from '../../layouts/Base.astro';
+import CtaBand from '../../components/CtaBand.astro';
+import Photo from '../../components/Photo.astro';
+import ProjectStrip from '../../components/ProjectStrip.astro';
+import { business } from '../../data/site';
+import { getProjects, coverOf, monthYear, projectPath, relatedTo, serviceOf, splitPhotos, type Project } from '../../data/projects';
+import { renderMarkdown } from '../../data/markdown';
+import { projectSchema, projectBreadcrumbSchema } from '../../data/schema';
+
+export async function getStaticPaths() {
+  const all = await getProjects();
+  return all.map((project) => ({ params: { slug: project.slug }, props: { project, related: relatedTo(project, all, 3) } }));
+}
+
+const { project: p, related } = Astro.props as { project: Project; related: Project[] };
+const svc = serviceOf(p);
+const cover = coverOf(p);
+const { pairs, rest } = splitPhotos(p);
+const gallery = rest.filter((x) => x.id !== cover.id);
+const body = renderMarkdown(p.bodyMarkdown);
+
+const images: Record<string, { url: string; width: number; height: number }> = {};
+for (const ph of p.photos) {
+  const img = await getImage({ src: ph.renditions.master, width: 1600, format: 'jpg' });
+  images[ph.id] = { url: new URL(img.src, Astro.site).href, width: img.options.width as number, height: img.options.height as number };
+}
+
+const title = p.seoTitle || `${p.title} | ${business.name}`;
+const schema = [projectSchema(p, images), projectBreadcrumbSchema(p)];
+const ogAlt = cover.altText;
+const common = svc?.jobs.slice(0, 3) ?? [];
+---
+
+<Base
+  title={title}
+  description={p.metaDescription}
+  schema={schema}
+  ogType="article"
+  ogImage={{ src: `/og/projects/${p.slug}.jpg`, width: 1200, height: 630, alt: ogAlt }}
+  publishedTime={p.publishedAt}
+  modifiedTime={p.updatedAt}
+>
+  <section class="proj-hero band on-navy">
+    <div class="wrap">
+      <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> <span aria-hidden="true">/</span> <a href="/projects/">Projects</a> <span aria-hidden="true">/</span> <span aria-current="page">{p.title}</span></nav>
+      <span class="eyebrow">{svc ? svc.tag : 'Project'} · {p.townName}, TX</span>
+      <h1>{p.title}</h1>
+      <p class="lede">{p.summary}</p>
+      <p class="meta">
+        {p.completedOn && <span>Completed {monthYear(p.completedOn)}</span>}
+        {svc && <a href={`/${svc.slug}/`}>{svc.name}</a>}
+      </p>
+      <div class="cover">
+        <Photo photo={cover} rendition="hero16x9" widths={[480, 800, 1200, 1600]} sizes="(min-width: 1112px) 1080px, calc(100vw - 32px)" loading="eager" fetchpriority="high" />
+      </div>
+    </div>
+  </section>
+
+  {pairs.length > 0 && (
+    <section class="block band" aria-labelledby="ba-h">
+      <div class="wrap">
+        <div class="head"><span class="eyebrow">Proof</span><h2 id="ba-h">Before &amp; after</h2></div>
+        <div class="pairs">
+          {pairs.map((pair) => (
+            <figure class="pair">
+              <div class="pair-grid">
+                <div class="side"><span class="tag">Before</span><Photo photo={pair.before} rendition="card4x3" widths={[400, 700, 1000]} sizes="(min-width: 700px) 520px, calc(100vw - 32px)" /></div>
+                <div class="side"><span class="tag after">After</span><Photo photo={pair.after} rendition="card4x3" widths={[400, 700, 1000]} sizes="(min-width: 700px) 520px, calc(100vw - 32px)" /></div>
+              </div>
+              {(pair.after.caption || pair.before.caption) && (
+                <figcaption>{[pair.before.caption, pair.after.caption].filter(Boolean).join(' → ')}</figcaption>
+              )}
+            </figure>
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
+
+  <section class="block band about" aria-labelledby="about-h">
+    <div class="wrap body-grid">
+      <div class="prose">
+        <h2 id="about-h">About this job</h2>
+        <div class="md" set:html={body} />
+      </div>
+      <aside class="svc-box" aria-labelledby="svc-h">
+        {svc && (
+          <>
+            <h2 id="svc-h">This was a {svc.name.toLowerCase()} job</h2>
+            <a class="more" href={`/${svc.slug}/`}>See {svc.name.toLowerCase()} details →</a>
+            <h3>Common jobs</h3>
+            <ul>{common.map((j) => <li>{j}</li>)}</ul>
+          </>
+        )}
+        <a class="btn btn-navy" href={`sms:${business.phoneE164}`}>Text a photo for a price</a>
+      </aside>
+    </div>
+  </section>
+
+  {gallery.length > 0 && (
+    <section class="block band gal" aria-labelledby="gal-h">
+      <div class="wrap">
+        <div class="head"><span class="eyebrow">Photos</span><h2 id="gal-h">More photos from this job</h2></div>
+        <ul class="gallery">
+          {gallery.map((ph) => (
+            <li>
+              <figure>
+                <Photo photo={ph} rendition="card4x3" widths={[360, 560, 800]} sizes="(min-width: 800px) 340px, (min-width: 500px) 45vw, 92vw" />
+                {ph.caption && <figcaption>{ph.caption}</figcaption>}
+              </figure>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  )}
+
+  <ProjectStrip heading="More recent projects" projects={related} id="related" eyebrow="Related" />
+
+  <CtaBand heading={`Need ${svc ? svc.name.toLowerCase() : 'a repair'} in ${p.townName}? Call or text Raul.`} />
+</Base>
+
+<style>
+  .proj-hero { background: var(--navy); color: var(--on-navy); }
+  .proj-hero .wrap { display: grid; gap: 16px; padding-block: 40px 48px; }
+  .crumbs { font-size: .88rem; color: var(--on-navy-muted); display: flex; gap: 8px; flex-wrap: wrap; }
+  .crumbs a { text-decoration: none; }
+  .crumbs a:hover { color: var(--on-navy); text-decoration: underline; }
+  h1 { font-size: clamp(2rem, 5.2vw, 3.2rem); font-weight: 800; letter-spacing: -.02em; max-width: 20em; }
+  .lede { font-size: 1.15rem; color: var(--on-navy-muted); max-width: 40em; }
+  .meta { display: flex; flex-wrap: wrap; gap: 6px 18px; color: var(--on-navy-muted); font-size: .95rem; }
+  .meta a { color: var(--gold-bright); font-weight: 700; }
+  .cover { margin-top: 8px; border-radius: 10px; overflow: hidden; aspect-ratio: 16 / 9; background: var(--navy-2); }
+  .cover :global(img) { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+  .pairs { display: grid; gap: 28px; }
+  .pair { margin: 0; display: grid; gap: 10px; }
+  .pair-grid { display: grid; gap: 12px; }
+  @media (min-width: 700px) { .pair-grid { grid-template-columns: 1fr 1fr; } }
+  .side { position: relative; border-radius: 8px; overflow: hidden; background: var(--line); }
+  .side :global(img) { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+  .tag { position: absolute; top: 10px; left: 10px; z-index: 1; background: var(--navy); color: var(--on-navy); font-size: .78rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; padding: 5px 10px; border-radius: 4px; }
+  .tag.after { background: var(--gold-bright); color: #14100a; }
+  figcaption { color: var(--muted); font-size: .92rem; }
+
+  .about { padding-top: 0; }
+  .body-grid { display: grid; gap: 40px; align-items: start; }
+  @media (min-width: 860px) { .body-grid { grid-template-columns: 1.5fr 1fr; } }
+  .prose h2 { font-size: 1.5rem; font-weight: 700; }
+  .md { display: grid; gap: 14px; }
+  .md :global(h2) { font-size: 1.3rem; margin-top: 8px; }
+  .md :global(h3), .md :global(h4) { font-size: 1.1rem; }
+  .md :global(ul), .md :global(ol) { margin: 0; padding-left: 1.2em; display: grid; gap: 4px; }
+  .md :global(a) { color: var(--gold-text); font-weight: 600; }
+  .svc-box { background: var(--surface); border: 1px solid var(--line); border-top: 3px solid var(--gold); border-radius: 8px; padding: 24px; display: grid; gap: 12px; min-width: 0; }
+  .svc-box h2 { font-size: 1.3rem; }
+  .svc-box h3 { font-size: 1rem; margin-top: 6px; }
+  .svc-box ul { margin: 0; padding-left: 1.1em; display: grid; gap: 6px; }
+  .svc-box li::marker { color: var(--gold); }
+  .svc-box .more { color: var(--gold-text); font-weight: 700; }
+  .svc-box .btn { justify-self: start; margin-top: 6px; }
+
+  .gal { padding-top: 0; }
+  .gallery { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+  .gallery figure { margin: 0; display: grid; gap: 8px; }
+  .gallery :global(img) { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 8px; background: var(--line); }
+</style>

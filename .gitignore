@@ -6,3 +6,5 @@ dist/
 src/content/projects/
 src/assets/projects/
 src/content/redirects.json
+# IndexNow key file written by fetch-content (hex key name)
+public/[0-9a-f]*[0-9a-f].txt

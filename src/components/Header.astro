@@ -1,6 +1,8 @@
 ---
 import Logo from './Logo.astro';
 import { business } from '../data/site';
+import { getProjects } from '../data/projects';
+const hasProjects = (await getProjects()).length > 0;
 ---
 <header class="site-header band on-navy">
   <nav class="wrap nav" aria-label="Main">
@@ -10,6 +12,7 @@ import { business } from '../data/site';
     </a>
     <div class="nav-links">
       <a href="/#services">Services</a>
+      {hasProjects && <a href="/projects/">Projects</a>}
       <a href="/#how-it-works">How it works</a>
       <a href="/#area">Service area</a>
       <a href="/#faq">FAQ</a>

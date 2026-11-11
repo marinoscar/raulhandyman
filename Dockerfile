@@ -11,7 +11,8 @@ COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
 
 COPY . .
-RUN npm run build
+# Build, then precompress (.gz/.br) and generate dist/_redirects.map
+RUN npm run build && node scripts/compress.mjs
 
 # ---- Runtime stage ----------------------------------------------------------
 FROM nginx:1.27-alpine AS production
