@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 
+import { MediaPhotoProcessingPort } from './media/media-photo-processing.port';
+import { ProjectMediaModule } from './media/project-media.module';
 import { isSliceEnabled } from '../platform/slices/manifest';
 import { PhotosService } from './photos.service';
 import { ProjectStorageGateway } from './project-storage.gateway';
@@ -23,9 +25,9 @@ const storageImports = isSliceEnabled('storage')
  * issues fill; their defaults do nothing.
  */
 @Module({
-  imports: storageImports,
+  imports: [...storageImports, ProjectMediaModule],
   controllers: [ProjectsController],
-  providers: [ProjectsService, PhotosService, SitePublishService, ProjectStorageGateway, ProjectEventsPublisher, PhotoProcessingPort],
+  providers: [ProjectsService, PhotosService, SitePublishService, ProjectStorageGateway, ProjectEventsPublisher, { provide: PhotoProcessingPort, useExisting: MediaPhotoProcessingPort }],
   exports: [ProjectsService, SitePublishService, ProjectEventsPublisher, PhotoProcessingPort],
 })
 export class ProjectsModule {}
