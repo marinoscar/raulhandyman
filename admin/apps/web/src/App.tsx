@@ -27,6 +27,8 @@ import { ADMIN_SECTIONS } from './config/adminSections';
 import { NAVIGATION } from './config/navigation';
 import { USER_SETTINGS_SECTIONS } from './config/userSettingsSections';
 import { NotesPage } from './pages/NotesPage';
+import { ProjectEditorPage } from './pages/ProjectEditorPage';
+import { ProjectsPage } from './pages/ProjectsPage';
 import { AppPlatformHost } from './platformHost';
 import {
   beforeLogout,
@@ -158,6 +160,8 @@ export function AppRoutes() {
       <Route element={<RequireAuth loading={spinner} />}>
         <Route element={shell}>
           <Route index element={<Home />} />
+          <Route path="projects" element={<Gate permission="projects:read"><ProjectsPage /></Gate>} />
+          <Route path="projects/:id" element={<Gate permission="projects:read"><ProjectEditorPage /></Gate>} />
           <Route path="notes" element={<Gate permission="notes:read"><NotesPage /></Gate>} />
           <Route path="settings" element={<Hub sections={USER_SETTINGS_SECTIONS} hubKey="user-settings-hub" title="Settings" subtitle="Manage your account preferences." />} />
           <Route path="settings/tokens" element={<UserTokensPage />} />

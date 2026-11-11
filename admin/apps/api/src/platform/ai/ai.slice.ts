@@ -29,6 +29,10 @@ export const aiSlice: ApiSlice = {
     const { registerAiFeature } = require('@marinoscar/platform-api/ai') as typeof import('@marinoscar/platform-api/ai');
     const { NOTES_SUMMARY_FEATURE } = require('./notes-summary.feature') as typeof import('./notes-summary.feature');
     registerAiFeature(NOTES_SUMMARY_FEATURE);
+    const { PROJECTS_COPY_FEATURE } = require('./projects-copy.feature') as typeof import('./projects-copy.feature');
+    const { PROJECTS_RETOUCH_FEATURE } = require('./projects-retouch.feature') as typeof import('./projects-retouch.feature');
+    registerAiFeature(PROJECTS_COPY_FEATURE);
+    registerAiFeature(PROJECTS_RETOUCH_FEATURE);
   },
   modules: () => {
     const { AiModule } = require('./ai.config') as typeof import('./ai.config');

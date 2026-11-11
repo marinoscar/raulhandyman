@@ -17,5 +17,17 @@ export const NOTES_WEBHOOK_CREDENTIAL_PURPOSE: CredentialPurposeDef = {
   tiers: ['system'],
 };
 
+/**
+ * The IndexNow key (issue #30), deployment tier. Public by design (the site
+ * serves it at `https://<host>/<key>.txt`), but kept in the encrypted store like
+ * every runtime-configured credential. Read by `site/indexnow-key.service.ts`.
+ */
+export const SITE_INDEXNOW_CREDENTIAL_PURPOSE: CredentialPurposeDef = {
+  purpose: 'site.indexnow_key',
+  owner: 'projects',
+  label: 'IndexNow key',
+  tiers: ['system'],
+};
+
 /** Every purpose this app adds. Append here. */
-export const APP_CREDENTIAL_PURPOSES: readonly CredentialPurposeDef[] = [NOTES_WEBHOOK_CREDENTIAL_PURPOSE];
+export const APP_CREDENTIAL_PURPOSES: readonly CredentialPurposeDef[] = [NOTES_WEBHOOK_CREDENTIAL_PURPOSE, SITE_INDEXNOW_CREDENTIAL_PURPOSE];

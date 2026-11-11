@@ -17,6 +17,6 @@ import { ProjectMediaStore } from './project-media.store';
 @Module({
   imports: [StorageProvidersModule, ObjectProcessingModule],
   providers: [ProjectMediaStore, ImageValidationProcessor, PhotoProcessHandler, PhotoProcessingService, MediaPhotoProcessingPort],
-  exports: [PhotoProcessingService, MediaPhotoProcessingPort],
+  exports: [PhotoProcessingService, MediaPhotoProcessingPort, ProjectMediaStore],
 })
 export class ProjectMediaModule {}

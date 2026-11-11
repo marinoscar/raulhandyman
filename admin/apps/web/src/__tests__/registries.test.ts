@@ -54,7 +54,15 @@ describe('shell navigation', () => {
     expect(destination?.permission).toBe(cards.find((c) => c.path === '/notes')?.permission);
   });
 
-  it('fit the bottom bar (four destinations at most)', () => {
-    expect(NAVIGATION.destinations.length).toBeLessThanOrEqual(4);
+  // More than four visible destinations overflow into the bottom bar's "More" sheet (ShellBottomNav `maxItems`).
+  it('stay small enough for the bottom bar and its More sheet (five destinations at most)', () => {
+    expect(NAVIGATION.destinations.length).toBeLessThanOrEqual(5);
+  });
+
+  it('list Projects first, behind the permission GET /api/projects enforces', () => {
+    expect(NAVIGATION.destinations[0]).toMatchObject({ key: 'projects', path: '/projects', permission: 'projects:read' });
+    const controller = read('../../../api/src/projects/projects.controller.ts');
+    const listRoute = /@Get\(\)\s*\n\s*@Auth\(\{ permissions: \['([^']+)'\] \}\)/.exec(controller);
+    expect(listRoute?.[1]).toBe('projects:read');
   });
 });

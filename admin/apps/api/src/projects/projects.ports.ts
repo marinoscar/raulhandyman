@@ -40,3 +40,25 @@ export interface PhotoToProcess {
 export class PhotoProcessingPort {
   enqueue(_photo: PhotoToProcess, _stages: readonly PhotoProcessingStage[]): Promise<void> | void {}
 }
+
+/** What an AI job finished, for the notification hook (issue #39). */
+export interface AiReadyEvent {
+  orgId: string;
+  projectId: string;
+  userId: string;
+  /** The photo, for a retouch (and a photo-level regenerate). */
+  photoId?: string;
+  jobId: string;
+}
+
+/**
+ * The seam where `projects.ai.ready` and `projects.retouch.ready` will be sent
+ * through the notifications slice (issue #39). The default does nothing. The AI
+ * jobs call it AFTER their write commits, never inside a transaction, and a
+ * failure here never fails the job.
+ */
+@Injectable()
+export class AiEventsPublisher {
+  publishSuggestReady(_event: AiReadyEvent): Promise<void> | void {}
+  publishRetouchReady(_event: AiReadyEvent): Promise<void> | void {}
+}

@@ -1,7 +1,7 @@
 // Prebuild step: turns the published content manifest into local files Astro can optimise.
 //
 //   Mode A  CONTENT_API_URL + (CONTENT_API_TOKEN_FILE | CONTENT_API_TOKEN): GET /api/site/content,
-//           then download every rendition from /api/site/media/<path>.
+//           then download every rendition from /api/site/<path> (paths in the manifest start with media/).
 //   Mode B  otherwise: use fixtures/content (or CONTENT_FIXTURE_DIR). CI always uses this mode.
 //   CONTENT_MODE=production (set by the Dockerfile): NEVER use fixtures. Without an API it
 //           builds an empty portfolio; with CONTENT_API_URL but no token the build fails.
@@ -160,7 +160,7 @@ async function bytesFor(job) {
   let lastErr;
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
-      const res = await fetch(`${apiUrl}/api/site/media/${job.source}`, { headers: { authorization: `Bearer ${token}` } });
+      const res = await fetch(`${apiUrl}/api/site/${job.source}`, { headers: { authorization: `Bearer ${token}` } });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return Buffer.from(await res.arrayBuffer());
     } catch (e) {

@@ -6,7 +6,7 @@ import { isSliceEnabled } from '../platform/slices/manifest';
 import { PhotosService } from './photos.service';
 import { ProjectStorageGateway } from './project-storage.gateway';
 import { ProjectsController } from './projects.controller';
-import { PhotoProcessingPort, ProjectEventsPublisher } from './projects.ports';
+import { AiEventsPublisher, PhotoProcessingPort, ProjectEventsPublisher } from './projects.ports';
 import { ProjectsService } from './projects.service';
 import { SitePublishService } from './site-publish.service';
 
@@ -27,7 +27,7 @@ const storageImports = isSliceEnabled('storage')
 @Module({
   imports: [...storageImports, ProjectMediaModule],
   controllers: [ProjectsController],
-  providers: [ProjectsService, PhotosService, SitePublishService, ProjectStorageGateway, ProjectEventsPublisher, { provide: PhotoProcessingPort, useExisting: MediaPhotoProcessingPort }],
-  exports: [ProjectsService, SitePublishService, ProjectEventsPublisher, PhotoProcessingPort],
+  providers: [ProjectsService, PhotosService, SitePublishService, ProjectStorageGateway, ProjectEventsPublisher, AiEventsPublisher, { provide: PhotoProcessingPort, useExisting: MediaPhotoProcessingPort }],
+  exports: [ProjectsService, SitePublishService, ProjectEventsPublisher, AiEventsPublisher, PhotoProcessingPort, ProjectStorageGateway],
 })
 export class ProjectsModule {}

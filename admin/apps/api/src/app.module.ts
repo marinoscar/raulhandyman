@@ -10,7 +10,16 @@ import configuration from './config/configuration';
 import { NotesModule } from './notes/notes.module';
 import { ProjectsModule } from './projects/projects.module';
 import { PLATFORM_MODULES } from './platform/platform';
+import { isSliceEnabled } from './platform/slices/manifest';
 import { PrismaModule } from './prisma/prisma.service';
+import { SiteModule } from './site/site.module';
+
+// AI copy and retouch for projects need the AI slice (and its `AiModule`), so the module is
+// required lazily, only while the slice is enabled (see `projects/projects.module.ts` for storage).
+const projectsAiModules = isSliceEnabled('ai')
+  ? // eslint-disable-next-line @typescript-eslint/no-require-imports
+    [(require('./projects/ai/projects-ai.module') as typeof import('./projects/ai/projects-ai.module')).ProjectsAiModule]
+  : [];
 
 /**
  * The root module: framework modules, the platform (src/platform/platform.ts)
@@ -27,6 +36,8 @@ import { PrismaModule } from './prisma/prisma.service';
     // The app's features.
     NotesModule,
     ProjectsModule,
+    ...projectsAiModules,
+    SiteModule,
   ],
   providers: [
     { provide: APP_PIPE, useClass: ZodValidationPipe },

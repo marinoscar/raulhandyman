@@ -118,6 +118,14 @@ model SitePublishState {
   lastBuildAt      DateTime? @map("last_build_at") @db.Timestamptz
   lastBuildStatus  String?   @map("last_build_status")
   lastBuildError   String?   @map("last_build_error")
+  // IndexNow ping bookkeeping (issue #30). `pingSnapshot` is the per-project
+  // fingerprint of the manifest last pinged ({ contentVersion, projects: [...] }),
+  // diffed by the next ping job to find the changed URLs.
+  lastPingAt       DateTime? @map("last_ping_at") @db.Timestamptz
+  lastPingStatus   String?   @map("last_ping_status") // ok | config_error | retrying | skipped
+  lastPingError    String?   @map("last_ping_error")
+  lastPingUrlCount Int?      @map("last_ping_url_count")
+  pingSnapshot     Json?     @map("ping_snapshot")
 
   org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 

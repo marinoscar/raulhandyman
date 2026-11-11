@@ -37,6 +37,8 @@ PROXY_CONF_SRC="${REPO_DIR}/deploy/raulhandyman.conf"
 # never lands in an image layer. An empty or missing file means "no admin yet": empty portfolio.
 TOKEN_FILE="${APP_DIR}/.content-token"
 VERSION_FILE="${APP_DIR}/.content-version"
+FAILED_FILE="${APP_DIR}/.content-failed"   # "<version> <epoch>" of the last failed content build
+RETRY_AFTER_SECONDS=1800
 ADMIN_API_URL="${ADMIN_API_URL:-http://127.0.0.1:8340}"
 LOCK_FILE="/var/lock/raulhandyman-deploy.lock"
 BUILD_LOG="/tmp/raulhandyman-build.log"
@@ -57,6 +59,13 @@ fetch_content_version() {
 # Tell the admin app how the build went (best effort; never fails the deploy).
 # $1 = live|failed   $2 = content version   $3 = duration ms   $4 = error text (optional)
 report_status() {
+  if [ -n "${2:-}" ]; then
+    if [ "${1}" = "failed" ]; then
+      printf '%s %s' "${2}" "$(date +%s)" > "${FAILED_FILE}"
+    else
+      rm -f "${FAILED_FILE}"
+    fi
+  fi
   [ -s "${TOKEN_FILE}" ] && [ -n "${2:-}" ] || return 0
   local err
   err="$(printf '%s' "${4:-}" | tr -d '"\\' | tr '\n\t' '  ' | cut -c1-1900)"
@@ -109,6 +118,14 @@ main() {
     fi
     if [ "${content_version}" = "$(cat "${VERSION_FILE}" 2>/dev/null || true)" ] && [ "${force}" = "no" ]; then
       exit 0
+    fi
+    # A version that failed to build is retried at most every 30 minutes (not every cron tick).
+    if [ "${force}" = "no" ] && [ -s "${FAILED_FILE}" ]; then
+      local failed_version failed_at
+      read -r failed_version failed_at < "${FAILED_FILE}" || true
+      if [ "${failed_version:-}" = "${content_version}" ] && [ $(( $(date +%s) - ${failed_at:-0} )) -lt "${RETRY_AFTER_SECONDS}" ]; then
+        exit 0
+      fi
     fi
     log "New content version ${content_version:0:12}. Rebuilding with the current code."
   fi
