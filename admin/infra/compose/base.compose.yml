@@ -1,4 +1,4 @@
-# GENERATED from @marinoscar/platform-infra@0.1.0-next.3 (compose) — do not edit; extend through an infra/compose/app.*.compose.yml overlay
+# GENERATED from @marinoscar/platform-infra@0.1.0-next.29 (compose) — do not edit; extend through an infra/compose/app.*.compose.yml overlay
 # Source of truth: @marinoscar/platform-infra/compose/base.compose.yml; re-materialise with `npx platform-infra sync`
 # =============================================================================
 # Docker Compose - Base Services
@@ -105,7 +105,7 @@ services:
       # GREPTIME_* (telemetry reads) arrive via env_file with no default here:
       # absent, the API reports telemetry as unavailable.
       - OTEL_ENABLED=${OTEL_ENABLED:-false}
-      - OTEL_SERVICE_NAME=${OTEL_SERVICE_NAME:-my-app-api}
+      - OTEL_SERVICE_NAME=${OTEL_SERVICE_NAME:-raul-handyman-admin-api}
       - LOG_LEVEL=${LOG_LEVEL:-info}
     # The API holds one socket per proxied SSE stream, so its descriptor limit
     # must not become the ceiling once nginx's is raised (issue #684).

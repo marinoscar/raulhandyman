@@ -1,24 +1,24 @@
 {
-  "version": "0.1.0-next.3",
+  "version": "0.1.0-next.29",
   "identity": {
     "cliName": "appctl",
     "envPrefix": "APPCTL_",
-    "serviceName": "my-app-api",
+    "serviceName": "raul-handyman-admin-api",
     "workerImage": "ghcr.io/OWNER/REPO-worker:latest",
-    "testDatabase": "my_app_test",
-    "testContainer": "my-app-db-test"
+    "testDatabase": "raul_handyman_admin_test",
+    "testContainer": "raul-handyman-admin-db-test"
   },
   "fragments": {
     "compose": {
       "files": {
-        "infra/compose/base.compose.yml": "707ce6e894e2b4a2485537c04581835510d4b54dcc53b79af63f011afae082ab",
+        "infra/compose/base.compose.yml": "57504d29ab2d1d32b3863529f57f908afa2dbc0a6c82b16e06328269143bd9c9",
         "infra/compose/dev.compose.yml": "5c289ee8d21b816550c677b3dc35de37c7a8a7033bbd3a2b0c7c2b477825d07c",
         "infra/compose/devdb.compose.yml": "3eb626711e6a4cd68178fe09ed8449c10c9c862782f1797891ad2a61bf9f6441",
         "infra/compose/prod.compose.yml": "027ca7b6c38af5c056a465d849af205528f78a3c2ebc6a57b7a8534877125e6a",
         "infra/compose/vps.compose.yml": "e09db906af528c82543d04fb8e459f7b12803a36d38df838a822c1e29a1e8384",
         "infra/compose/worker.compose.yml": "4076406df4a6fcb4a6118aa66b742dafbc918516e7db2f5f6783568241aab466",
         "infra/compose/worker.build.compose.yml": "8675ce8b0dfb5e8de057d9fed224bea918abfebf6c856d8c643156baf28c27d8",
-        "infra/compose/test.compose.yml": "288e69608ea0fec9df8d2662fb2f41be57859432127c9ac48dcca2d3cce00ee8",
+        "infra/compose/test.compose.yml": "fc35d9b618058efa8ab14cda0af3afba3ba8fc0d557691745cc667e64013864a",
         "infra/compose/postgres-init/10-application-role.sh": "a7ea0ac5bdd7fa7537a3653e9e0c92fa8ca512718b1a7de60832666552dfb1f0"
       },
       "executable": [
@@ -37,7 +37,7 @@
     },
     "env": {
       "files": {
-        "infra/compose/.env.example": "89d47a2626a6d2f332c3ae88b4b44ee5c3bab7b20a27a39d1a67deec3526f72c",
+        "infra/compose/.env.example": "5fab7d2bedc4d946b91df7ba8cf30e86e27f74281a88d84c1da0198633787661",
         "infra/compose/.env.worker.example": "7995a6d6c45b0aa987dfc15982aa74b5b6a38e63e05019e8d22c24b9e26f43f8"
       }
     },

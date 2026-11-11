@@ -122,6 +122,11 @@ model User {
   // composed from app:notes.prisma
   notes Note[]
 
+  // composed from app:projects.prisma
+  projectsCreated Project[]      @relation("ProjectCreatedBy")
+  projectsUpdated Project[]      @relation("ProjectUpdatedBy")
+  projectPhotos   ProjectPhoto[] @relation("ProjectPhotoCreatedBy")
+
   @@map("users")
 }
 
@@ -504,6 +509,11 @@ model Organization {
 
   // composed from app:documents.prisma
   documents Document[]
+
+  // composed from app:projects.prisma
+  projects         Project[]
+  projectPhotos    ProjectPhoto[]
+  sitePublishState SitePublishState?
 
   @@map("organizations")
 }
